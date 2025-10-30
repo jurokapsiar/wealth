@@ -28,6 +28,8 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 - Interactive projection table
 - Clean, intuitive interface
 - No backend required - works entirely in the browser
+- **localStorage Persistence**: All settings and costs automatically save to your browser
+- **Extended Projections**: View 30 years by default, with option to extend by 10-year increments
 
 ## Project Structure
 
@@ -53,6 +55,7 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 - **Styling**: Tailwind CSS + Shadcn UI
 - **Routing**: Wouter
 - **State Management**: React Hooks (useState, useEffect)
+- **Persistence**: Browser localStorage
 - **Build Tool**: Vite
 - **Server**: Express (serves frontend only)
 
@@ -141,11 +144,18 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
      - **Percentage of Wealth**: For lifestyle expenses tied to wealth
    - Set when the cost starts (Year 0 = first year)
    - Set how many years the cost applies
+   - Remove any cost by clicking the trash icon
 
 3. **Review Projections**
-   - View year-by-year wealth progression
+   - View 30 years of projections by default
+   - Click "Show 10 More Years" to extend the projection
    - Click on any year to see detailed cost breakdown
    - Adjust inputs to see different scenarios
+
+4. **Automatic Saving**
+   - All changes are automatically saved to your browser
+   - Refresh the page anytime - your data will persist
+   - Clear browser data to reset the calculator
 
 ## Design Philosophy
 

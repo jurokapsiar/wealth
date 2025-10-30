@@ -3,7 +3,18 @@ import { SettingsCard } from "@/components/SettingsCard";
 import { CostEntry, type Cost } from "@/components/CostEntry";
 import { ProjectionTable, type YearProjection } from "@/components/ProjectionTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Calculator } from "lucide-react";
+import { Plus, Calculator, PlusCircle } from "lucide-react";
+
+const STORAGE_KEY = 'wealth-projection-data';
+
+interface StoredData {
+  initialWealth: number;
+  yearlyInterest: number;
+  inflation: number;
+  startYear: number;
+  costs: Cost[];
+  maxYears: number;
+}
 
 export default function Home() {
   const [initialWealth, setInitialWealth] = useState(100000);
@@ -12,6 +23,46 @@ export default function Home() {
   const [startYear, setStartYear] = useState(2026);
   const [costs, setCosts] = useState<Cost[]>([]);
   const [projections, setProjections] = useState<YearProjection[]>([]);
+  const [maxYears, setMaxYears] = useState(30);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const data: StoredData = JSON.parse(stored);
+        setInitialWealth(data.initialWealth ?? 100000);
+        setYearlyInterest(data.yearlyInterest ?? 7.5);
+        setInflation(data.inflation ?? 3.0);
+        setStartYear(data.startYear ?? 2026);
+        setCosts(data.costs ?? []);
+        setMaxYears(data.maxYears ?? 30);
+      }
+    } catch (error) {
+      console.error('Failed to load from localStorage:', error);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save to localStorage whenever state changes
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    try {
+      const data: StoredData = {
+        initialWealth,
+        yearlyInterest,
+        inflation,
+        startYear,
+        costs,
+        maxYears,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+    }
+  }, [initialWealth, yearlyInterest, inflation, startYear, costs, maxYears, isLoaded]);
 
   const addCost = () => {
     const newCost: Cost = {
@@ -33,20 +84,25 @@ export default function Home() {
     setCosts(costs.filter((c) => c.id !== id));
   };
 
+  const extendYears = () => {
+    setMaxYears(maxYears + 10);
+  };
+
   const calculateProjections = () => {
     if (initialWealth <= 0 || yearlyInterest < 0 || inflation < 0) {
       return;
     }
 
-    const maxYear = costs.reduce(
+    const maxCostYear = costs.reduce(
       (max, cost) => Math.max(max, cost.startYear + cost.years),
-      10
+      0
     );
+    const projectionYears = Math.max(maxYears, maxCostYear);
 
     const yearlyProjections: YearProjection[] = [];
     let currentWealth = initialWealth;
 
-    for (let year = 0; year < maxYear; year++) {
+    for (let year = 0; year < projectionYears; year++) {
       const startingWealth = currentWealth;
       const interestGained = currentWealth > 0 ? (currentWealth * yearlyInterest) / 100 : 0;
       const wealthAfterInterest = currentWealth + interestGained;
@@ -94,8 +150,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    calculateProjections();
-  }, [initialWealth, yearlyInterest, inflation, startYear, costs]);
+    if (isLoaded) {
+      calculateProjections();
+    }
+  }, [initialWealth, yearlyInterest, inflation, startYear, costs, maxYears, isLoaded]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,6 +213,20 @@ export default function Home() {
         </div>
 
         <ProjectionTable projections={projections} />
+
+        {projections.length > 0 && (
+          <div className="flex justify-center pb-6">
+            <Button
+              onClick={extendYears}
+              data-testid="button-extend-years"
+              variant="outline"
+              className="gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Show 10 More Years
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );
