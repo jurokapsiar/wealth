@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 
 export interface YearProjection {
@@ -88,9 +88,8 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                 const hasCosts = projection.costs.length > 0;
 
                 return (
-                  <>
+                  <Fragment key={projection.yearNumber}>
                     <tr
-                      key={projection.yearNumber}
                       className="border-b hover-elevate cursor-pointer"
                       onClick={() => hasCosts && toggleYear(projection.yearNumber)}
                       data-testid={`row-year-${projection.yearNumber}`}
@@ -171,7 +170,7 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
