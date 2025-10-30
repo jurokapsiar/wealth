@@ -8,7 +8,7 @@ export interface YearProjection {
   calendarYear: number;
   startingWealth: number;
   interestGained: number;
-  costs: Array<{ name: string; amount: number }>;
+  costs: Array<{ name: string; amount: number; todaysValue: number }>;
   totalCosts: number;
   endingWealth: number;
 }
@@ -145,13 +145,21 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                             {projection.costs.map((cost, index) => (
                               <div
                                 key={index}
-                                className="flex justify-between items-center pl-4 py-1"
+                                className="pl-4 py-1 space-y-1"
                                 data-testid={`cost-item-${projection.yearNumber}-${index}`}
                               >
-                                <span className="text-sm">{cost.name}</span>
-                                <span className="text-sm tabular-nums text-destructive">
-                                  -{formatCurrency(cost.amount)}
-                                </span>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-medium">{cost.name}</span>
+                                  <span className="text-sm tabular-nums text-destructive">
+                                    -{formatCurrency(cost.amount)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-muted-foreground">Year 0 Value</span>
+                                  <span className="text-xs tabular-nums text-muted-foreground">
+                                    -{formatCurrency(cost.todaysValue)}
+                                  </span>
+                                </div>
                               </div>
                             ))}
                             <div className="flex justify-between items-center pl-4 py-1 border-t pt-2 font-semibold">

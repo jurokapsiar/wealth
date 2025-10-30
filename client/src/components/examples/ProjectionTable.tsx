@@ -8,8 +8,8 @@ export default function ProjectionTableExample() {
       startingWealth: 100000,
       interestGained: 7500,
       costs: [
-        { name: 'Living Expenses', amount: 50000 },
-        { name: 'Travel', amount: 5000 },
+        { name: 'Living Expenses', amount: 50000, todaysValue: 50000 },
+        { name: 'Travel', amount: 5000, todaysValue: 5000 },
       ],
       totalCosts: 55000,
       endingWealth: 52500,
@@ -20,8 +20,8 @@ export default function ProjectionTableExample() {
       startingWealth: 52500,
       interestGained: 3938,
       costs: [
-        { name: 'Living Expenses', amount: 51500 },
-        { name: 'Travel', amount: 5150 },
+        { name: 'Living Expenses', amount: 51500, todaysValue: 50000 },
+        { name: 'Travel', amount: 5150, todaysValue: 5000 },
       ],
       totalCosts: 56650,
       endingWealth: -212,
@@ -32,7 +32,7 @@ export default function ProjectionTableExample() {
       startingWealth: -212,
       interestGained: 0,
       costs: [
-        { name: 'Living Expenses', amount: 53045 },
+        { name: 'Living Expenses', amount: 53045, todaysValue: 50000 },
       ],
       totalCosts: 53045,
       endingWealth: -53257,

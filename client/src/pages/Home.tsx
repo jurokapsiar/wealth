@@ -107,7 +107,7 @@ export default function Home() {
       const interestGained = currentWealth > 0 ? (currentWealth * yearlyInterest) / 100 : 0;
       const wealthAfterInterest = currentWealth + interestGained;
 
-      const yearCosts: Array<{ name: string; amount: number }> = [];
+      const yearCosts: Array<{ name: string; amount: number; todaysValue: number }> = [];
       let totalCosts = 0;
 
       costs.forEach((cost) => {
@@ -122,9 +122,11 @@ export default function Home() {
           }
 
           if (costAmount > 0) {
+            const todaysValue = costAmount / inflationMultiplier;
             yearCosts.push({
               name: cost.name || 'Unnamed Cost',
               amount: costAmount,
+              todaysValue,
             });
             totalCosts += costAmount;
           }

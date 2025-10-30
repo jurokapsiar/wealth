@@ -21,6 +21,7 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
   - **Percentage of Wealth**: Costs calculated as a percentage of current wealth
 - **Year-over-Year Projections**: Detailed table showing wealth progression over time
 - **Cost Breakdown**: Expandable rows showing individual cost deductions per year
+  - **Year 0 Value**: Each cost displays its purchasing power in Year 0 terms (inflation-adjusted)
 
 ### User Experience
 - Mobile-first responsive design
@@ -67,7 +68,8 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 2. **Cost Deduction**: Costs are then deducted from the wealth (after interest)
 3. **Inflation Adjustment**: Fixed costs increase each year based on the inflation rate
 4. **Percentage Costs**: Calculated from wealth after interest is applied
-5. **Carry Forward**: Ending wealth becomes the starting wealth for the next year
+5. **Year 0 Value**: Each cost's purchasing power is calculated in Year 0 terms by deflating the inflated amount
+6. **Carry Forward**: Ending wealth becomes the starting wealth for the next year
 
 ### Example Calculation
 
@@ -76,16 +78,29 @@ Year 0:
 - Starting Wealth: $100,000
 - Interest (7.5%): +$7,500
 - Wealth after Interest: $107,500
-- Fixed Cost: -$50,000
+- Fixed Cost: -$50,000 (Year 0 Value: $50,000)
 - Ending Wealth: $57,500
 
 Year 1:
 - Starting Wealth: $57,500
 - Interest (7.5%): +$4,312.50
 - Wealth after Interest: $61,812.50
-- Fixed Cost (inflation-adjusted 3%): -$51,500
+- Fixed Cost (inflation-adjusted 3%): -$51,500 (Year 0 Value: $50,000)
 - Ending Wealth: $10,312.50
+
+Year 2:
+- Starting Wealth: $10,312.50
+- Interest (7.5%): +$773.44
+- Wealth after Interest: $11,085.94
+- Fixed Cost (inflation-adjusted 3%): -$53,045 (Year 0 Value: $50,000)
+- Ending Wealth: -$41,959.06
 ```
+
+**Understanding Year 0 Value:**
+The "Year 0 Value" shows what each cost would be worth at Year 0 prices, helping you understand the real purchasing power of each expense regardless of inflation. For a fixed $50,000 annual cost with 3% inflation:
+- Year 1 cost: $51,500 → Year 0 Value: $50,000
+- Year 5 cost: $57,964 → Year 0 Value: $50,000
+- Year 10 cost: $67,196 → Year 0 Value: $50,000
 
 ## Development
 
@@ -150,6 +165,7 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
    - View 30 years of projections by default
    - Click "Show 10 More Years" to extend the projection
    - Click on any year to see detailed cost breakdown
+   - Each cost shows both the inflated amount and its Year 0 Value
    - Adjust inputs to see different scenarios
 
 4. **Automatic Saving**
