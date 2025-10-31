@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { SettingsCard } from "@/components/SettingsCard";
 import { CostEntry, type Cost } from "@/components/CostEntry";
+import { InvestmentEntry, type Investment } from "@/components/InvestmentEntry";
 import { ProjectionTable, type YearProjection } from "@/components/ProjectionTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Calculator, PlusCircle } from "lucide-react";
+import { Plus, Calculator, PlusCircle, TrendingUp } from "lucide-react";
 
 const STORAGE_KEY = 'wealth-projection-data';
 
@@ -13,6 +14,7 @@ interface StoredData {
   inflation: number;
   startYear: number;
   costs: Cost[];
+  investments: Investment[];
   maxYears: number;
 }
 
@@ -22,6 +24,7 @@ export default function Home() {
   const [inflation, setInflation] = useState(3.0);
   const [startYear, setStartYear] = useState(2026);
   const [costs, setCosts] = useState<Cost[]>([]);
+  const [investments, setInvestments] = useState<Investment[]>([]);
   const [projections, setProjections] = useState<YearProjection[]>([]);
   const [maxYears, setMaxYears] = useState(30);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -37,6 +40,7 @@ export default function Home() {
         setInflation(data.inflation ?? 3.0);
         setStartYear(data.startYear ?? 2026);
         setCosts(data.costs ?? []);
+        setInvestments(data.investments ?? []);
         setMaxYears(data.maxYears ?? 30);
       }
     } catch (error) {
@@ -56,13 +60,14 @@ export default function Home() {
         inflation,
         startYear,
         costs,
+        investments,
         maxYears,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Failed to save to localStorage:', error);
     }
-  }, [initialWealth, yearlyInterest, inflation, startYear, costs, maxYears, isLoaded]);
+  }, [initialWealth, yearlyInterest, inflation, startYear, costs, investments, maxYears, isLoaded]);
 
   const addCost = () => {
     const newCost: Cost = {
@@ -84,6 +89,25 @@ export default function Home() {
     setCosts(costs.filter((c) => c.id !== id));
   };
 
+  const addInvestment = () => {
+    const newInvestment: Investment = {
+      id: Date.now().toString(),
+      name: '',
+      amount: 0,
+      startYear: 0,
+      years: 1,
+    };
+    setInvestments([...investments, newInvestment]);
+  };
+
+  const updateInvestment = (id: string, updatedInvestment: Investment) => {
+    setInvestments(investments.map((i) => (i.id === id ? updatedInvestment : i)));
+  };
+
+  const removeInvestment = (id: string) => {
+    setInvestments(investments.filter((i) => i.id !== id));
+  };
+
   const extendYears = () => {
     setMaxYears(maxYears + 10);
   };
@@ -97,7 +121,11 @@ export default function Home() {
       (max, cost) => Math.max(max, cost.startYear + cost.years),
       0
     );
-    const projectionYears = Math.max(maxYears, maxCostYear);
+    const maxInvestmentYear = investments.reduce(
+      (max, investment) => Math.max(max, investment.startYear + investment.years),
+      0
+    );
+    const projectionYears = Math.max(maxYears, maxCostYear, maxInvestmentYear);
 
     const yearlyProjections: YearProjection[] = [];
     let currentWealth = initialWealth;
@@ -106,6 +134,26 @@ export default function Home() {
       const startingWealth = currentWealth;
       const interestGained = currentWealth > 0 ? (currentWealth * yearlyInterest) / 100 : 0;
       const wealthAfterInterest = currentWealth + interestGained;
+
+      const yearInvestments: Array<{ name: string; amount: number; todaysValue: number }> = [];
+      let totalInvestments = 0;
+
+      investments.forEach((investment) => {
+        if (year >= investment.startYear && year < investment.startYear + investment.years) {
+          const inflationMultiplier = Math.pow(1 + inflation / 100, year);
+          const investmentAmount = investment.amount * inflationMultiplier;
+
+          if (investmentAmount > 0) {
+            const todaysValue = investmentAmount / inflationMultiplier;
+            yearInvestments.push({
+              name: investment.name || 'Unnamed Investment',
+              amount: investmentAmount,
+              todaysValue,
+            });
+            totalInvestments += investmentAmount;
+          }
+        }
+      });
 
       const yearCosts: Array<{ name: string; amount: number; todaysValue: number }> = [];
       let totalCosts = 0;
@@ -133,13 +181,15 @@ export default function Home() {
         }
       });
 
-      const endingWealth = wealthAfterInterest - totalCosts;
+      const endingWealth = wealthAfterInterest + totalInvestments - totalCosts;
 
       yearlyProjections.push({
         yearNumber: year,
         calendarYear: startYear + year,
         startingWealth,
         interestGained,
+        investments: yearInvestments,
+        totalInvestments,
         costs: yearCosts,
         totalCosts,
         endingWealth,
@@ -155,7 +205,7 @@ export default function Home() {
     if (isLoaded) {
       calculateProjections();
     }
-  }, [initialWealth, yearlyInterest, inflation, startYear, costs, maxYears, isLoaded]);
+  }, [initialWealth, yearlyInterest, inflation, startYear, costs, investments, maxYears, isLoaded]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,6 +229,40 @@ export default function Home() {
           onInflationChange={setInflation}
           onStartYearChange={setStartYear}
         />
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Investment Income</h2>
+            <Button
+              onClick={addInvestment}
+              data-testid="button-add-investment"
+              size="default"
+              className="gap-2"
+            >
+              <TrendingUp className="h-4 w-4" />
+              Add Investment
+            </Button>
+          </div>
+
+          {investments.length === 0 ? (
+            <div className="text-center py-8 px-4 border border-dashed rounded-lg">
+              <p className="text-muted-foreground">
+                No investments added yet. Click "Add Investment" to get started.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {investments.map((investment) => (
+                <InvestmentEntry
+                  key={investment.id}
+                  investment={investment}
+                  onUpdate={(updatedInvestment) => updateInvestment(investment.id, updatedInvestment)}
+                  onRemove={() => removeInvestment(investment.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">

@@ -8,6 +8,8 @@ export interface YearProjection {
   calendarYear: number;
   startingWealth: number;
   interestGained: number;
+  investments: Array<{ name: string; amount: number; todaysValue: number }>;
+  totalInvestments: number;
   costs: Array<{ name: string; amount: number; todaysValue: number }>;
   totalCosts: number;
   endingWealth: number;
@@ -85,13 +87,13 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
             <tbody>
               {projections.map((projection) => {
                 const isExpanded = expandedYears.has(projection.yearNumber);
-                const hasCosts = projection.costs.length > 0;
+                const hasDetails = projection.costs.length > 0 || projection.investments.length > 0;
 
                 return (
                   <Fragment key={projection.yearNumber}>
                     <tr
                       className="border-b hover-elevate cursor-pointer"
-                      onClick={() => hasCosts && toggleYear(projection.yearNumber)}
+                      onClick={() => hasDetails && toggleYear(projection.yearNumber)}
                       data-testid={`row-year-${projection.yearNumber}`}
                     >
                       <td className="px-4 py-3">
@@ -119,7 +121,7 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {hasCosts && (
+                        {hasDetails && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -135,14 +137,49 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                         )}
                       </td>
                     </tr>
-                    {isExpanded && hasCosts && (
+                    {isExpanded && hasDetails && (
                       <tr>
                         <td colSpan={6} className="px-4 py-3 bg-muted/30">
-                          <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              Cost Breakdown
-                            </p>
-                            {projection.costs.map((cost, index) => (
+                          <div className="space-y-4">
+                            {projection.investments.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Investment Income
+                                </p>
+                                {projection.investments.map((investment, index) => (
+                                  <div
+                                    key={index}
+                                    className="pl-4 py-1 space-y-1"
+                                    data-testid={`investment-item-${projection.yearNumber}-${index}`}
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-sm font-medium">{investment.name}</span>
+                                      <span className="text-sm tabular-nums text-chart-2">
+                                        +{formatCurrency(investment.amount)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-muted-foreground">Year 0 Value</span>
+                                      <span className="text-xs tabular-nums text-muted-foreground">
+                                        +{formatCurrency(investment.todaysValue)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between items-center pl-4 py-1 border-t pt-2 font-semibold">
+                                  <span className="text-sm">Total Income</span>
+                                  <span className="text-sm tabular-nums text-chart-2">
+                                    +{formatCurrency(projection.totalInvestments)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            {projection.costs.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Cost Breakdown
+                                </p>
+                                {projection.costs.map((cost, index) => (
                               <div
                                 key={index}
                                 className="pl-4 py-1 space-y-1"
@@ -161,15 +198,17 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                                   </span>
                                 </div>
                               </div>
-                            ))}
-                            <div className="flex justify-between items-center pl-4 py-1 border-t pt-2 font-semibold">
-                              <span className="text-sm">Total Deducted</span>
-                              <span className="text-sm tabular-nums text-destructive">
-                                -{formatCurrency(projection.totalCosts)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center pl-4 py-1 font-semibold">
-                              <span className="text-sm">Remaining Wealth</span>
+                                ))}
+                                <div className="flex justify-between items-center pl-4 py-1 border-t pt-2 font-semibold">
+                                  <span className="text-sm">Total Deducted</span>
+                                  <span className="text-sm tabular-nums text-destructive">
+                                    -{formatCurrency(projection.totalCosts)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center pl-4 py-1 font-semibold border-t pt-2">
+                              <span className="text-sm">Net Wealth</span>
                               <span className="text-sm tabular-nums">
                                 {formatCurrency(projection.endingWealth)}
                               </span>
