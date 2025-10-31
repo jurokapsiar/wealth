@@ -37,6 +37,7 @@ const generateColor = (baseHue: number, index: number, total: number) => {
 
 export function ChartView({ projections, costs, investments }: ChartViewProps) {
   const [showWealth, setShowWealth] = useState(true);
+  const [useYear0Prices, setUseYear0Prices] = useState(false);
   const [visibleInvestments, setVisibleInvestments] = useState<Set<string>>(
     new Set(investments.map((inv) => inv.id))
   );
@@ -78,20 +79,22 @@ export function ChartView({ projections, costs, investments }: ChartViewProps) {
       proj.investments.forEach((inv) => {
         const investment = investments.find((i) => i.name === inv.name);
         if (investment && visibleInvestments.has(investment.id)) {
-          dataPoint[`inv_${investment.id}`] = Math.round(inv.amount);
+          const value = useYear0Prices ? inv.todaysValue : inv.amount;
+          dataPoint[`inv_${investment.id}`] = Math.round(value);
         }
       });
 
       proj.costs.forEach((cost) => {
         const costItem = costs.find((c) => c.name === cost.name);
         if (costItem && visibleCosts.has(costItem.id)) {
-          dataPoint[`cost_${costItem.id}`] = Math.round(cost.amount);
+          const value = useYear0Prices ? cost.todaysValue : cost.amount;
+          dataPoint[`cost_${costItem.id}`] = Math.round(value);
         }
       });
 
       return dataPoint;
     });
-  }, [projections, showWealth, visibleInvestments, visibleCosts, investments, costs]);
+  }, [projections, showWealth, useYear0Prices, visibleInvestments, visibleCosts, investments, costs]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -144,6 +147,18 @@ export function ChartView({ projections, costs, investments }: ChartViewProps) {
         <CardTitle>Chart View</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
+          <Checkbox
+            id="year0-prices"
+            checked={useYear0Prices}
+            onCheckedChange={(checked) => setUseYear0Prices(checked as boolean)}
+            data-testid="checkbox-year0-prices"
+          />
+          <Label htmlFor="year0-prices" className="cursor-pointer font-medium">
+            Show values in Year 0 prices (inflation-adjusted)
+          </Label>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-3">
             <h3 className="font-semibold text-sm">Wealth</h3>
@@ -286,11 +301,15 @@ export function ChartView({ projections, costs, investments }: ChartViewProps) {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground space-y-1">
           <p>
-            Tip: Hover over the chart to see detailed values. Use the scroll bar to navigate
-            through years.
+            <strong>Tip:</strong> Hover over the chart to see detailed values. Use the scroll bar to navigate through years.
           </p>
+          {useYear0Prices && (
+            <p className="text-primary">
+              <strong>Year 0 Prices:</strong> All investment and cost values are shown in today's purchasing power, adjusted for inflation.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
