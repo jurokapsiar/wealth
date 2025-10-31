@@ -3,6 +3,7 @@ import { SettingsCard } from "@/components/SettingsCard";
 import { CostEntry, type Cost } from "@/components/CostEntry";
 import { InvestmentEntry, type Investment } from "@/components/InvestmentEntry";
 import { ProjectionTable, type YearProjection } from "@/components/ProjectionTable";
+import { ChartView } from "@/components/ChartView";
 import { Button } from "@/components/ui/button";
 import { Plus, Calculator, PlusCircle, TrendingUp } from "lucide-react";
 
@@ -297,6 +298,12 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        <ChartView 
+          projections={projections} 
+          costs={costs} 
+          investments={investments} 
+        />
 
         <ProjectionTable projections={projections} />
 
