@@ -21,6 +21,7 @@ interface ChartViewProps {
   projections: YearProjection[];
   costs: Cost[];
   investments: Investment[];
+  startingAge?: number;
 }
 
 const COLORS = {
@@ -35,7 +36,7 @@ const generateColor = (baseHue: number, index: number, total: number) => {
   return `hsl(${baseHue + (index * 30) % 60}, ${saturation}%, ${lightness}%)`;
 };
 
-export function ChartView({ projections, costs, investments }: ChartViewProps) {
+export function ChartView({ projections, costs, investments, startingAge = 42 }: ChartViewProps) {
   const [showWealth, setShowWealth] = useState(true);
   const [useYear0Prices, setUseYear0Prices] = useState(false);
   const [visibleInvestments, setVisibleInvestments] = useState<Set<string>>(
@@ -67,13 +68,16 @@ export function ChartView({ projections, costs, investments }: ChartViewProps) {
 
   const chartData = useMemo(() => {
     return projections.map((proj) => {
+      const age = startingAge + proj.yearNumber;
       const dataPoint: Record<string, number | string> = {
-        year: `Y${proj.yearNumber}`,
+        year: `Y${proj.yearNumber} (${age})`,
         calendarYear: proj.calendarYear,
+        age: age,
       };
 
       if (showWealth) {
-        dataPoint.wealth = Math.round(proj.endingWealth);
+        dataPoint.wealth = Math.round(proj.endingWealth / 10);
+        dataPoint.wealthActual = Math.round(proj.endingWealth);
       }
 
       proj.investments.forEach((inv) => {
@@ -94,7 +98,7 @@ export function ChartView({ projections, costs, investments }: ChartViewProps) {
 
       return dataPoint;
     });
-  }, [projections, showWealth, useYear0Prices, visibleInvestments, visibleCosts, investments, costs]);
+  }, [projections, showWealth, useYear0Prices, visibleInvestments, visibleCosts, investments, costs, startingAge]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -113,11 +117,16 @@ export function ChartView({ projections, costs, investments }: ChartViewProps) {
           <p className="font-semibold mb-2">
             {label} ({year})
           </p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {formatCurrency(entry.value)}
-            </p>
-          ))}
+          {payload.map((entry: any, index: number) => {
+            const displayValue = entry.dataKey === 'wealth' && entry.payload.wealthActual
+              ? entry.payload.wealthActual
+              : entry.value;
+            return (
+              <p key={index} style={{ color: entry.color }} className="text-sm">
+                {entry.name}: {formatCurrency(displayValue)}
+              </p>
+            );
+          })}
         </div>
       );
     }

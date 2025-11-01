@@ -302,7 +302,8 @@ export default function Home() {
         <ChartView 
           projections={projections} 
           costs={costs} 
-          investments={investments} 
+          investments={investments}
+          startingAge={42}
         />
 
         <ProjectionTable projections={projections} />
