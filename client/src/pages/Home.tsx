@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SettingsCard } from "@/components/SettingsCard";
 import { CostEntry, type Cost } from "@/components/CostEntry";
 import { InvestmentEntry, type Investment } from "@/components/InvestmentEntry";
 import { ProjectionTable, type YearProjection } from "@/components/ProjectionTable";
 import { ChartView } from "@/components/ChartView";
 import { Button } from "@/components/ui/button";
-import { Plus, Calculator, PlusCircle, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, Calculator, PlusCircle, TrendingUp, DollarSign } from "lucide-react";
 
 const STORAGE_KEY = 'wealth-projection-data';
 
@@ -31,6 +33,9 @@ export default function Home() {
   const [projections, setProjections] = useState<YearProjection[]>([]);
   const [maxYears, setMaxYears] = useState(30);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Refs for scrolling to costs
+  const costRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -121,6 +126,15 @@ export default function Home() {
 
   const extendYears = () => {
     setMaxYears(maxYears + 10);
+  };
+
+  const scrollToCost = (costId: string) => {
+    const element = costRefs.current[costId];
+    if (element) {
+      const yOffset = -80; // Offset for sticky headers
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
   };
 
   const calculateProjections = () => {
@@ -229,6 +243,33 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Mobile sticky cost navigator - only show when costs exist */}
+      {costs.length > 0 && (
+        <div className="sticky top-16 z-20 bg-background/95 backdrop-blur border-b shadow-sm md:hidden">
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <DollarSign className="h-3 w-3" />
+              <span className="font-medium">Quick Jump to Costs:</span>
+            </div>
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2 pb-2">
+                {costs.map((cost, index) => (
+                  <Badge
+                    key={cost.id}
+                    variant={cost.enabled ? "default" : "secondary"}
+                    className="cursor-pointer hover-elevate active-elevate-2 shrink-0"
+                    onClick={() => scrollToCost(cost.id)}
+                    data-testid={`badge-jump-cost-${cost.id}`}
+                  >
+                    {cost.name || `Cost ${index + 1}`}
+                  </Badge>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      )}
+
       <main className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
         <SettingsCard
           initialWealth={initialWealth}
@@ -300,12 +341,16 @@ export default function Home() {
           ) : (
             <div className="space-y-4">
               {costs.map((cost) => (
-                <CostEntry
+                <div
                   key={cost.id}
-                  cost={cost}
-                  onUpdate={(updatedCost) => updateCost(cost.id, updatedCost)}
-                  onRemove={() => removeCost(cost.id)}
-                />
+                  ref={(el) => (costRefs.current[cost.id] = el)}
+                >
+                  <CostEntry
+                    cost={cost}
+                    onUpdate={(updatedCost) => updateCost(cost.id, updatedCost)}
+                    onRemove={() => removeCost(cost.id)}
+                  />
+                </div>
               ))}
             </div>
           )}

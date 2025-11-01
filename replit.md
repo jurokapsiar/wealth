@@ -48,6 +48,7 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 - No backend required - works entirely in the browser
 - **localStorage Persistence**: All settings and costs automatically save to your browser
 - **Extended Projections**: View 30 years by default, with option to extend by 10-year increments
+- **Mobile Quick Navigation**: Sticky header with badges for fast scrolling to any cost entry (mobile only)
 
 ## Project Structure
 
@@ -276,6 +277,13 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
 - Birth year input in settings
 - Dynamic age calculation: (start year - birth year) + year number
 - Age displayed in chart year axis labels
+
+### Mobile Navigation (Completed)
+- Sticky header below main header showing all costs as badges
+- Click any badge to smoothly scroll to that cost entry
+- Color-coded badges (enabled costs vs disabled costs)
+- Horizontal scrolling for many costs
+- Only visible on mobile devices (hidden on desktop)
 
 ## Future Enhancements
 
