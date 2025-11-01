@@ -304,6 +304,7 @@ export default function Home() {
           costs={costs} 
           investments={investments}
           startingAge={42}
+          inflation={inflation}
         />
 
         <ProjectionTable projections={projections} />

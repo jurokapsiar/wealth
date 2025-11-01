@@ -22,10 +22,12 @@ interface ChartViewProps {
   costs: Cost[];
   investments: Investment[];
   startingAge?: number;
+  inflation: number;
 }
 
 const COLORS = {
   wealth: "hsl(var(--primary))",
+  wealthYear0: "hsl(280, 70%, 50%)",
   investmentBase: "hsl(142, 76%, 36%)",
   costBase: "hsl(0, 84%, 60%)",
 };
@@ -36,8 +38,9 @@ const generateColor = (baseHue: number, index: number, total: number) => {
   return `hsl(${baseHue + (index * 30) % 60}, ${saturation}%, ${lightness}%)`;
 };
 
-export function ChartView({ projections, costs, investments, startingAge = 42 }: ChartViewProps) {
+export function ChartView({ projections, costs, investments, startingAge = 42, inflation }: ChartViewProps) {
   const [showWealth, setShowWealth] = useState(true);
+  const [showWealthYear0, setShowWealthYear0] = useState(false);
   const [useYear0Prices, setUseYear0Prices] = useState(false);
   const [visibleInvestments, setVisibleInvestments] = useState<Set<string>>(
     new Set(investments.map((inv) => inv.id))
@@ -80,6 +83,13 @@ export function ChartView({ projections, costs, investments, startingAge = 42 }:
         dataPoint.wealthActual = Math.round(proj.endingWealth);
       }
 
+      if (showWealthYear0) {
+        const inflationMultiplier = Math.pow(1 + inflation / 100, proj.yearNumber);
+        const wealthYear0 = proj.endingWealth / inflationMultiplier;
+        dataPoint.wealthYear0 = Math.round(wealthYear0 / 10);
+        dataPoint.wealthYear0Actual = Math.round(wealthYear0);
+      }
+
       proj.investments.forEach((inv) => {
         const investment = investments.find((i) => i.name === inv.name);
         if (investment && visibleInvestments.has(investment.id)) {
@@ -98,7 +108,7 @@ export function ChartView({ projections, costs, investments, startingAge = 42 }:
 
       return dataPoint;
     });
-  }, [projections, showWealth, useYear0Prices, visibleInvestments, visibleCosts, investments, costs, startingAge]);
+  }, [projections, showWealth, showWealthYear0, useYear0Prices, visibleInvestments, visibleCosts, investments, costs, startingAge, inflation]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -118,9 +128,12 @@ export function ChartView({ projections, costs, investments, startingAge = 42 }:
             {label} ({year})
           </p>
           {payload.map((entry: any, index: number) => {
-            const displayValue = entry.dataKey === 'wealth' && entry.payload.wealthActual
-              ? entry.payload.wealthActual
-              : entry.value;
+            let displayValue = entry.value;
+            if (entry.dataKey === 'wealth' && entry.payload.wealthActual) {
+              displayValue = entry.payload.wealthActual;
+            } else if (entry.dataKey === 'wealthYear0' && entry.payload.wealthYear0Actual) {
+              displayValue = entry.payload.wealthYear0Actual;
+            }
             return (
               <p key={index} style={{ color: entry.color }} className="text-sm">
                 {entry.name}: {formatCurrency(displayValue)}
@@ -179,7 +192,18 @@ export function ChartView({ projections, costs, investments, startingAge = 42 }:
                 data-testid="checkbox-wealth"
               />
               <Label htmlFor="wealth-toggle" className="cursor-pointer">
-                Net Wealth
+                Net Wealth (Nominal)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="wealth-year0-toggle"
+                checked={showWealthYear0}
+                onCheckedChange={(checked) => setShowWealthYear0(checked as boolean)}
+                data-testid="checkbox-wealth-year0"
+              />
+              <Label htmlFor="wealth-year0-toggle" className="cursor-pointer">
+                Net Wealth (Year 0 Prices)
               </Label>
             </div>
           </div>
@@ -266,7 +290,20 @@ export function ChartView({ projections, costs, investments, startingAge = 42 }:
                     dataKey="wealth"
                     stroke={COLORS.wealth}
                     strokeWidth={3}
-                    name="Net Wealth"
+                    name="Net Wealth (Nominal)"
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                )}
+
+                {showWealthYear0 && (
+                  <Line
+                    type="monotone"
+                    dataKey="wealthYear0"
+                    stroke={COLORS.wealthYear0}
+                    strokeWidth={3}
+                    strokeDasharray="8 4"
+                    name="Net Wealth (Year 0 Prices)"
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
                   />
