@@ -49,6 +49,12 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 - **localStorage Persistence**: All settings and costs automatically save to your browser
 - **Extended Projections**: View 30 years by default, with option to extend by 10-year increments
 - **Mobile Quick Navigation**: Sticky header with badges for fast scrolling to any cost entry (mobile only)
+- **Scenario Management**: Save, load, and manage multiple financial scenarios
+  - Save current scenario with a name
+  - Save As to create variants of existing scenarios
+  - Open previously saved scenarios
+  - Delete unwanted scenarios
+  - Current scenario name displayed in header
 
 ## Project Structure
 
@@ -246,10 +252,20 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
      - **Net Wealth**: Final wealth after all transactions
    - Adjust inputs to see different scenarios
 
-5. **Automatic Saving**
+5. **Manage Scenarios**
+   - **Save**: Click "Save" to update the current scenario
+   - **Save As**: Click "Scenarios" → "Save As..." to create a new named scenario
+   - **Open**: Click "Scenarios" → "Open Scenario..." to:
+     - View all saved scenarios with dates
+     - Load any saved scenario
+     - Delete scenarios you no longer need
+   - **Current Scenario**: The header shows which scenario you're working on
+   
+6. **Automatic Persistence**
    - All changes are automatically saved to your browser
+   - Scenarios are stored separately and persist across sessions
    - Refresh the page anytime - your data will persist
-   - Clear browser data to reset the calculator
+   - Clear browser data to reset everything
 
 ## Design Philosophy
 
@@ -285,13 +301,27 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
 - Horizontal scrolling for many costs
 - Only visible on mobile devices (hidden on desktop)
 
+### Scenario Management (Completed)
+- Save button in header to quickly save current scenario
+- Scenarios dropdown menu with Save As and Open options
+- Save As dialog with scenario name input
+- Open Scenario dialog listing all saved scenarios with:
+  - Scenario name and save date
+  - Open button to load the scenario
+  - Delete button with confirmation dialog
+- Current scenario name displayed in header subtitle
+- Separate localStorage key for scenarios list
+- Toast notifications for save/load/delete actions
+
 ## Future Enhancements
 
 Potential features for future development:
-- Save/load multiple scenarios
-- Export to CSV/PDF
-- Scenario comparison (side-by-side)
+- Export scenarios to CSV/PDF
+- Scenario comparison (side-by-side view)
+- Import scenarios from file
 - One-time events (windfalls, major purchases)
 - Percentage-based investments (e.g., portfolio growth)
-- Tax considerations
+- Tax considerations and tax brackets
 - Social Security/pension income modeling
+- What-if analysis tools
+- Goal setting and tracking

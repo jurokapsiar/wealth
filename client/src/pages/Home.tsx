@@ -7,9 +7,16 @@ import { ChartView } from "@/components/ChartView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Calculator, PlusCircle, TrendingUp, DollarSign } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Calculator, PlusCircle, TrendingUp, DollarSign, Save, FolderOpen, ChevronDown, Trash2 } from "lucide-react";
 
 const STORAGE_KEY = 'wealth-projection-data';
+const SCENARIOS_KEY = 'wealth-projection-scenarios';
 
 interface StoredData {
   initialWealth: number;
@@ -20,6 +27,13 @@ interface StoredData {
   costs: Cost[];
   investments: Investment[];
   maxYears: number;
+}
+
+interface Scenario {
+  id: string;
+  name: string;
+  data: StoredData;
+  savedAt: number;
 }
 
 export default function Home() {
@@ -34,34 +48,57 @@ export default function Home() {
   const [maxYears, setMaxYears] = useState(30);
   const [isLoaded, setIsLoaded] = useState(false);
   
+  // Scenario management
+  const [currentScenarioName, setCurrentScenarioName] = useState<string>("Default");
+  const [savedScenarios, setSavedScenarios] = useState<Scenario[]>([]);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveAsDialogOpen, setSaveAsDialogOpen] = useState(false);
+  const [openDialogOpen, setOpenDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
+  const [newScenarioName, setNewScenarioName] = useState("");
+  
+  const { toast } = useToast();
+  
   // Refs for scrolling to costs
   const costRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Load from localStorage on mount
   useEffect(() => {
     try {
+      // Load current scenario
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data: StoredData = JSON.parse(stored);
-        setInitialWealth(data.initialWealth ?? 100000);
-        setYearlyInterest(data.yearlyInterest ?? 7.5);
-        setInflation(data.inflation ?? 3.0);
-        setStartYear(data.startYear ?? 2026);
-        setBirthYear(data.birthYear ?? 1984);
-        // Migrate old costs to add enabled field if missing
-        const migratedCosts = (data.costs ?? []).map(cost => ({
-          ...cost,
-          enabled: cost.enabled ?? true,
-        }));
-        setCosts(migratedCosts);
-        setInvestments(data.investments ?? []);
-        setMaxYears(data.maxYears ?? 30);
+        loadScenarioData(data);
+      }
+      
+      // Load saved scenarios list
+      const scenariosStored = localStorage.getItem(SCENARIOS_KEY);
+      if (scenariosStored) {
+        setSavedScenarios(JSON.parse(scenariosStored));
       }
     } catch (error) {
       console.error('Failed to load from localStorage:', error);
     }
     setIsLoaded(true);
   }, []);
+  
+  const loadScenarioData = (data: StoredData) => {
+    setInitialWealth(data.initialWealth ?? 100000);
+    setYearlyInterest(data.yearlyInterest ?? 7.5);
+    setInflation(data.inflation ?? 3.0);
+    setStartYear(data.startYear ?? 2026);
+    setBirthYear(data.birthYear ?? 1984);
+    // Migrate old costs to add enabled field if missing
+    const migratedCosts = (data.costs ?? []).map(cost => ({
+      ...cost,
+      enabled: cost.enabled ?? true,
+    }));
+    setCosts(migratedCosts);
+    setInvestments(data.investments ?? []);
+    setMaxYears(data.maxYears ?? 30);
+  };
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -134,6 +171,106 @@ export default function Home() {
       const yOffset = -80; // Offset for sticky headers
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+  
+  const getCurrentData = (): StoredData => ({
+    initialWealth,
+    yearlyInterest,
+    inflation,
+    startYear,
+    birthYear,
+    costs,
+    investments,
+    maxYears,
+  });
+  
+  const saveScenario = (name: string, showToast = true) => {
+    const data = getCurrentData();
+    const existingIndex = savedScenarios.findIndex(s => s.name === name);
+    
+    let updatedScenarios: Scenario[];
+    if (existingIndex >= 0) {
+      // Update existing
+      updatedScenarios = [...savedScenarios];
+      updatedScenarios[existingIndex] = {
+        ...updatedScenarios[existingIndex],
+        data,
+        savedAt: Date.now(),
+      };
+    } else {
+      // Create new
+      const newScenario: Scenario = {
+        id: Date.now().toString(),
+        name,
+        data,
+        savedAt: Date.now(),
+      };
+      updatedScenarios = [...savedScenarios, newScenario];
+    }
+    
+    setSavedScenarios(updatedScenarios);
+    localStorage.setItem(SCENARIOS_KEY, JSON.stringify(updatedScenarios));
+    setCurrentScenarioName(name);
+    
+    if (showToast) {
+      toast({
+        title: "Scenario saved",
+        description: `"${name}" has been saved successfully.`,
+      });
+    }
+  };
+  
+  const handleSave = () => {
+    if (currentScenarioName) {
+      saveScenario(currentScenarioName);
+      setSaveDialogOpen(false);
+    } else {
+      setSaveAsDialogOpen(true);
+    }
+  };
+  
+  const handleSaveAs = () => {
+    if (newScenarioName.trim()) {
+      saveScenario(newScenarioName.trim());
+      setSaveAsDialogOpen(false);
+      setNewScenarioName("");
+    }
+  };
+  
+  const loadScenario = (scenario: Scenario) => {
+    loadScenarioData(scenario.data);
+    setCurrentScenarioName(scenario.name);
+    setOpenDialogOpen(false);
+    toast({
+      title: "Scenario loaded",
+      description: `"${scenario.name}" has been loaded.`,
+    });
+  };
+  
+  const confirmDeleteScenario = (scenarioId: string) => {
+    setScenarioToDelete(scenarioId);
+    setDeleteDialogOpen(true);
+  };
+  
+  const deleteScenario = () => {
+    if (scenarioToDelete) {
+      const updatedScenarios = savedScenarios.filter(s => s.id !== scenarioToDelete);
+      setSavedScenarios(updatedScenarios);
+      localStorage.setItem(SCENARIOS_KEY, JSON.stringify(updatedScenarios));
+      
+      const deletedScenario = savedScenarios.find(s => s.id === scenarioToDelete);
+      if (deletedScenario && deletedScenario.name === currentScenarioName) {
+        setCurrentScenarioName("Default");
+      }
+      
+      toast({
+        title: "Scenario deleted",
+        description: `Scenario has been deleted.`,
+      });
+      
+      setDeleteDialogOpen(false);
+      setScenarioToDelete(null);
     }
   };
 
@@ -236,12 +373,184 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-background border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Calculator className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold sm:text-2xl">Wealth Projection Calculator</h1>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Calculator className="h-6 w-6 text-primary" />
+              <div>
+                <h1 className="text-xl font-bold sm:text-2xl">Wealth Projection Calculator</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  {currentScenarioName ? `Scenario: ${currentScenarioName}` : 'Unsaved scenario'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Save button */}
+              <Button
+                variant="outline"
+                size="default"
+                onClick={handleSave}
+                data-testid="button-save"
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                <span className="hidden sm:inline">Save</span>
+              </Button>
+              
+              {/* Scenarios menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    data-testid="button-scenarios-menu"
+                    className="gap-2"
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Scenarios</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => setSaveAsDialogOpen(true)} data-testid="menu-save-as">
+                    <Save className="h-4 w-4 mr-2" />
+                    Save As...
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setOpenDialogOpen(true)} data-testid="menu-open">
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Open Scenario...
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Save As Dialog */}
+      <Dialog open={saveAsDialogOpen} onOpenChange={setSaveAsDialogOpen}>
+        <DialogContent data-testid="dialog-save-as">
+          <DialogHeader>
+            <DialogTitle>Save Scenario As</DialogTitle>
+            <DialogDescription>
+              Enter a name for this scenario to save your current settings, costs, and investments.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="scenario-name">Scenario Name</Label>
+              <Input
+                id="scenario-name"
+                data-testid="input-scenario-name"
+                placeholder="e.g., Retirement Plan A"
+                value={newScenarioName}
+                onChange={(e) => setNewScenarioName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveAs();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSaveAsDialogOpen(false);
+                setNewScenarioName("");
+              }}
+              data-testid="button-cancel-save"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveAs}
+              disabled={!newScenarioName.trim()}
+              data-testid="button-confirm-save"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Open Scenario Dialog */}
+      <Dialog open={openDialogOpen} onOpenChange={setOpenDialogOpen}>
+        <DialogContent data-testid="dialog-open-scenario" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Open Scenario</DialogTitle>
+            <DialogDescription>
+              Load a previously saved scenario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {savedScenarios.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No saved scenarios yet. Save your current scenario to get started.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {savedScenarios.map((scenario) => (
+                  <div
+                    key={scenario.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover-elevate"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate" data-testid={`text-scenario-${scenario.id}`}>
+                        {scenario.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Saved {new Date(scenario.savedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => loadScenario(scenario)}
+                        data-testid={`button-load-${scenario.id}`}
+                      >
+                        Open
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => confirmDeleteScenario(scenario.id)}
+                        data-testid={`button-delete-${scenario.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent data-testid="dialog-delete-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scenario?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the saved scenario.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteScenario}
+              data-testid="button-confirm-delete"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Mobile sticky cost navigator - only show when costs exist */}
       {costs.length > 0 && (
