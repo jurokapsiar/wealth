@@ -14,6 +14,7 @@ interface StoredData {
   yearlyInterest: number;
   inflation: number;
   startYear: number;
+  birthYear: number;
   costs: Cost[];
   investments: Investment[];
   maxYears: number;
@@ -24,6 +25,7 @@ export default function Home() {
   const [yearlyInterest, setYearlyInterest] = useState(7.5);
   const [inflation, setInflation] = useState(3.0);
   const [startYear, setStartYear] = useState(2026);
+  const [birthYear, setBirthYear] = useState(1984);
   const [costs, setCosts] = useState<Cost[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [projections, setProjections] = useState<YearProjection[]>([]);
@@ -40,7 +42,13 @@ export default function Home() {
         setYearlyInterest(data.yearlyInterest ?? 7.5);
         setInflation(data.inflation ?? 3.0);
         setStartYear(data.startYear ?? 2026);
-        setCosts(data.costs ?? []);
+        setBirthYear(data.birthYear ?? 1984);
+        // Migrate old costs to add enabled field if missing
+        const migratedCosts = (data.costs ?? []).map(cost => ({
+          ...cost,
+          enabled: cost.enabled ?? true,
+        }));
+        setCosts(migratedCosts);
         setInvestments(data.investments ?? []);
         setMaxYears(data.maxYears ?? 30);
       }
@@ -60,6 +68,7 @@ export default function Home() {
         yearlyInterest,
         inflation,
         startYear,
+        birthYear,
         costs,
         investments,
         maxYears,
@@ -68,7 +77,7 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to save to localStorage:', error);
     }
-  }, [initialWealth, yearlyInterest, inflation, startYear, costs, investments, maxYears, isLoaded]);
+  }, [initialWealth, yearlyInterest, inflation, startYear, birthYear, costs, investments, maxYears, isLoaded]);
 
   const addCost = () => {
     const newCost: Cost = {
@@ -78,6 +87,7 @@ export default function Home() {
       amount: 0,
       startYear: 0,
       years: 1,
+      enabled: true,
     };
     setCosts([...costs, newCost]);
   };
@@ -160,7 +170,7 @@ export default function Home() {
       let totalCosts = 0;
 
       costs.forEach((cost) => {
-        if (year >= cost.startYear && year < cost.startYear + cost.years) {
+        if (cost.enabled && year >= cost.startYear && year < cost.startYear + cost.years) {
           const inflationMultiplier = Math.pow(1 + inflation / 100, year);
           let costAmount = 0;
 
@@ -225,10 +235,12 @@ export default function Home() {
           yearlyInterest={yearlyInterest}
           inflation={inflation}
           startYear={startYear}
+          birthYear={birthYear}
           onInitialWealthChange={setInitialWealth}
           onYearlyInterestChange={setYearlyInterest}
           onInflationChange={setInflation}
           onStartYearChange={setStartYear}
+          onBirthYearChange={setBirthYear}
         />
 
         <div className="space-y-4">
@@ -303,7 +315,7 @@ export default function Home() {
           projections={projections} 
           costs={costs} 
           investments={investments}
-          startingAge={42}
+          startingAge={startYear - birthYear}
           inflation={inflation}
         />
 

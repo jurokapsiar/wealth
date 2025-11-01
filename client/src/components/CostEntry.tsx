@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2 } from "lucide-react";
 
 export interface Cost {
@@ -12,6 +13,7 @@ export interface Cost {
   amount: number;
   startYear: number;
   years: number;
+  enabled: boolean;
 }
 
 interface CostEntryProps {
@@ -22,9 +24,17 @@ interface CostEntryProps {
 
 export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
   return (
-    <Card>
+    <Card className={!cost.enabled ? "opacity-60" : ""}>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-4">
-        <CardTitle className="text-base font-medium">Cost Entry</CardTitle>
+        <div className="flex items-center gap-3">
+          <Checkbox
+            id={`cost-enabled-${cost.id}`}
+            checked={cost.enabled}
+            onCheckedChange={(checked) => onUpdate({ ...cost, enabled: checked as boolean })}
+            data-testid={`checkbox-cost-enabled-${cost.id}`}
+          />
+          <CardTitle className="text-base font-medium">Cost Entry</CardTitle>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -47,6 +57,7 @@ export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
             value={cost.name}
             onChange={(e) => onUpdate({ ...cost, name: e.target.value })}
             placeholder="e.g., Annual Expenses"
+            disabled={!cost.enabled}
           />
         </div>
 
@@ -57,12 +68,14 @@ export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
             onValueChange={(value: 'fixed' | 'percentage') =>
               onUpdate({ ...cost, type: value })
             }
+            disabled={!cost.enabled}
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem
                 value="fixed"
                 id={`fixed-${cost.id}`}
                 data-testid={`radio-fixed-${cost.id}`}
+                disabled={!cost.enabled}
               />
               <Label
                 htmlFor={`fixed-${cost.id}`}
@@ -76,6 +89,7 @@ export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
                 value="percentage"
                 id={`percentage-${cost.id}`}
                 data-testid={`radio-percentage-${cost.id}`}
+                disabled={!cost.enabled}
               />
               <Label
                 htmlFor={`percentage-${cost.id}`}
@@ -106,6 +120,7 @@ export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
               value={cost.amount}
               onChange={(e) => onUpdate({ ...cost, amount: Number(e.target.value) })}
               className={cost.type === 'fixed' ? 'pl-7 tabular-nums' : 'pr-7 tabular-nums'}
+              disabled={!cost.enabled}
             />
             {cost.type === 'percentage' && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -128,6 +143,7 @@ export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
               value={cost.startYear}
               onChange={(e) => onUpdate({ ...cost, startYear: Number(e.target.value) })}
               className="tabular-nums"
+              disabled={!cost.enabled}
             />
             <p className="text-xs text-muted-foreground">Year from start (0 = first year)</p>
           </div>
@@ -144,6 +160,7 @@ export function CostEntry({ cost, onUpdate, onRemove }: CostEntryProps) {
               value={cost.years}
               onChange={(e) => onUpdate({ ...cost, years: Number(e.target.value) })}
               className="tabular-nums"
+              disabled={!cost.enabled}
             />
             <p className="text-xs text-muted-foreground">Number of years</p>
           </div>

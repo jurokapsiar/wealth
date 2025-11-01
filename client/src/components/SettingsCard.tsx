@@ -7,10 +7,12 @@ interface SettingsCardProps {
   yearlyInterest: number;
   inflation: number;
   startYear: number;
+  birthYear: number;
   onInitialWealthChange: (value: number) => void;
   onYearlyInterestChange: (value: number) => void;
   onInflationChange: (value: number) => void;
   onStartYearChange: (value: number) => void;
+  onBirthYearChange: (value: number) => void;
 }
 
 export function SettingsCard({
@@ -18,10 +20,12 @@ export function SettingsCard({
   yearlyInterest,
   inflation,
   startYear,
+  birthYear,
   onInitialWealthChange,
   onYearlyInterestChange,
   onInflationChange,
   onStartYearChange,
+  onBirthYearChange,
 }: SettingsCardProps) {
   return (
     <Card>
@@ -96,20 +100,39 @@ export function SettingsCard({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="start-year" className="text-sm font-medium">
-            Start Year
-          </Label>
-          <Input
-            id="start-year"
-            data-testid="input-start-year"
-            type="number"
-            min="2000"
-            max="2100"
-            value={startYear}
-            onChange={(e) => onStartYearChange(Number(e.target.value))}
-            className="tabular-nums"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="start-year" className="text-sm font-medium">
+              Start Year
+            </Label>
+            <Input
+              id="start-year"
+              data-testid="input-start-year"
+              type="number"
+              min="2000"
+              max="2100"
+              value={startYear}
+              onChange={(e) => onStartYearChange(Number(e.target.value))}
+              className="tabular-nums"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="birth-year" className="text-sm font-medium">
+              Birth Year
+            </Label>
+            <Input
+              id="birth-year"
+              data-testid="input-birth-year"
+              type="number"
+              min="1900"
+              max="2100"
+              value={birthYear}
+              onChange={(e) => onBirthYearChange(Number(e.target.value))}
+              className="tabular-nums"
+            />
+            <p className="text-xs text-muted-foreground">Used to calculate age on chart</p>
+          </div>
         </div>
       </CardContent>
     </Card>

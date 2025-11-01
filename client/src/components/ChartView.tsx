@@ -21,7 +21,7 @@ interface ChartViewProps {
   projections: YearProjection[];
   costs: Cost[];
   investments: Investment[];
-  startingAge?: number;
+  startingAge: number;
   inflation: number;
 }
 
@@ -38,7 +38,7 @@ const generateColor = (baseHue: number, index: number, total: number) => {
   return `hsl(${baseHue + (index * 30) % 60}, ${saturation}%, ${lightness}%)`;
 };
 
-export function ChartView({ projections, costs, investments, startingAge = 42, inflation }: ChartViewProps) {
+export function ChartView({ projections, costs, investments, startingAge, inflation }: ChartViewProps) {
   const [showWealth, setShowWealth] = useState(true);
   const [showWealthYear0, setShowWealthYear0] = useState(false);
   const [useYear0Prices, setUseYear0Prices] = useState(false);

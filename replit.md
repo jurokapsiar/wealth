@@ -16,18 +16,29 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 ## Features
 
 ### Core Functionality
-- **Initial Settings**: Configure starting wealth, interest rate, inflation rate, and start year
+- **Initial Settings**: Configure starting wealth, interest rate, inflation rate, start year, and birth year
 - **Investment Income**: Add unlimited investment entries that increase wealth each year
   - Fixed amounts that adjust for inflation
   - Configure name, amount, start year, and duration
 - **Cost Management**: Add unlimited cost entries with two types:
   - **Fixed Amount**: Specific dollar amounts that adjust for inflation each year
   - **Percentage of Wealth**: Costs calculated as a percentage of current wealth
+  - **Enable/Disable Toggle**: Each cost has a checkbox to enable or disable it without deleting
+  - Disabled costs are not included in calculations
 - **Year-over-Year Projections**: Detailed table showing wealth progression over time
 - **Detailed Breakdown**: Expandable rows showing individual investments and costs per year
   - **Investment Income**: Shows all active investments with inflated amounts
   - **Cost Breakdown**: Shows all active costs with deductions
   - **Year 0 Value**: Each investment and cost displays its purchasing power in Year 0 terms (inflation-adjusted)
+- **Interactive Chart View**: Visual representation of wealth and cash flows over time
+  - Line graphs for wealth, investments, and costs
+  - Toggle individual lines on/off
+  - Wealth lines displayed at 1/10 scale for better comparison with costs/investments
+  - Tooltips show actual (non-scaled) values
+  - Age displayed in year axis labels (e.g., "Y0 (42)")
+  - "Net Wealth (Year 0 Prices)" line showing inflation-adjusted purchasing power
+  - "Show Year 0 Prices" toggle to view all values in inflation-adjusted terms
+  - Scrollable chart for viewing extended projections
 
 ### User Experience
 - Mobile-first responsive design
@@ -46,8 +57,9 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 │   │   ├── components/
 │   │   │   ├── SettingsCard.tsx       # Initial wealth & rate inputs
 │   │   │   ├── InvestmentEntry.tsx    # Individual investment configuration
-│   │   │   ├── CostEntry.tsx          # Individual cost configuration
+│   │   │   ├── CostEntry.tsx          # Individual cost configuration with enable/disable
 │   │   │   ├── ProjectionTable.tsx    # Year-by-year results display
+│   │   │   ├── ChartView.tsx          # Interactive chart visualization
 │   │   │   └── ui/                    # Shadcn UI components
 │   │   ├── pages/
 │   │   │   └── Home.tsx               # Main application page
@@ -61,6 +73,7 @@ All calculations happen in real-time as you adjust inputs, providing immediate f
 
 - **Frontend**: React + TypeScript
 - **Styling**: Tailwind CSS + Shadcn UI
+- **Charts**: Recharts (responsive line charts)
 - **Routing**: Wouter
 - **State Management**: React Hooks (useState, useEffect)
 - **Persistence**: Browser localStorage
@@ -139,6 +152,7 @@ The application runs on port 5000 and combines both frontend and backend.
 - Yearly interest percentage
 - Inflation rate
 - Starting year
+- Birth year (for age calculation on charts)
 
 **InvestmentEntry**: Individual investment configuration
 - Investment name
@@ -148,12 +162,14 @@ The application runs on port 5000 and combines both frontend and backend.
 - Remove button
 
 **CostEntry**: Individual cost configuration
+- Enable/disable checkbox (disabled costs are not included in calculations)
 - Cost name
 - Type selector (fixed vs percentage)
 - Amount input (adapts based on type)
 - Start year (0-based from start year)
 - Duration in years
 - Remove button
+- Visual indication when disabled (reduced opacity)
 
 **ProjectionTable**: Displays wealth projections
 - Year-by-year breakdown
@@ -161,6 +177,18 @@ The application runs on port 5000 and combines both frontend and backend.
 - Responsive column visibility
 - Formatted currency display
 - Year 0 Value calculations
+
+**ChartView**: Interactive visualization of projections
+- Line graphs for net wealth, investments, and costs
+- Dual wealth lines: nominal and inflation-adjusted (Year 0 prices)
+- Wealth lines scaled at 1/10 for better visual comparison
+- Tooltips display actual (non-scaled) values
+- Toggle visibility of individual lines
+- Age display in year axis (e.g., "Y0 (42)")
+- "Show Year 0 Prices" toggle for inflation-adjusted view
+- Purple dashed line for Year 0 wealth (purchasing power)
+- Scrollable horizontal axis for extended projections
+- Color-coded lines for different investments and costs
 
 ### State Management
 
@@ -196,12 +224,22 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
      - **Percentage of Wealth**: For lifestyle expenses tied to wealth
    - Set when the cost starts (Year 0 = first year)
    - Set how many years the cost applies
+   - Use the checkbox to enable/disable costs without deleting them
+   - Disabled costs are excluded from all calculations
    - Remove any cost by clicking the trash icon
 
 4. **Review Projections**
    - View 30 years of projections by default
    - Click "Show 10 More Years" to extend the projection
-   - Click on any year to see detailed breakdown:
+   - **Chart View**: 
+     - Interactive line graphs showing wealth trajectory over time
+     - Toggle individual lines on/off (wealth, investments, costs)
+     - Hover over any point to see detailed values
+     - View age progression in the year axis
+     - Toggle "Show Year 0 Prices" to see inflation-adjusted values
+     - Compare nominal wealth vs purchasing power (Year 0 prices)
+   - **Table View**:
+     - Click on any year to see detailed breakdown
      - **Investment Income**: All active investments with Year 0 Values
      - **Cost Breakdown**: All active costs with Year 0 Values
      - **Net Wealth**: Final wealth after all transactions
@@ -219,12 +257,33 @@ Calculations run automatically via `useEffect` whenever any input changes, provi
 - **Simple & Clean**: Focused interface without unnecessary complexity
 - **Accessible**: Proper labels, keyboard navigation, and semantic HTML
 
+## Recent Updates
+
+### Chart Visualization (Completed)
+- Interactive line charts using Recharts
+- Toggleable lines for wealth, investments, and costs
+- Wealth lines scaled at 1/10 for better visualization
+- Age display in year axis based on birth year
+- Year 0 prices view for inflation-adjusted analysis
+- Dual wealth lines showing both nominal and real purchasing power
+
+### Cost Management Enhancements (Completed)
+- Enable/disable checkbox for each cost
+- Disabled costs excluded from calculations
+- Visual feedback for disabled state
+
+### Age Tracking (Completed)
+- Birth year input in settings
+- Dynamic age calculation: (start year - birth year) + year number
+- Age displayed in chart year axis labels
+
 ## Future Enhancements
 
 Potential features for future development:
-- Save/load scenarios
+- Save/load multiple scenarios
 - Export to CSV/PDF
-- Chart visualization of wealth trajectory
-- Comparison of multiple scenarios
+- Scenario comparison (side-by-side)
 - One-time events (windfalls, major purchases)
 - Percentage-based investments (e.g., portfolio growth)
+- Tax considerations
+- Social Security/pension income modeling
