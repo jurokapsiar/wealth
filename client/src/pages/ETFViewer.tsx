@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, X, ArrowUp, TrendingUp } from "lucide-react";
 import { ETFTable } from "@/components/ETFTable";
 import { ETFChart } from "@/components/ETFChart";
+import { getCachedETFData, setCachedETFData, clearOldCache } from "@/lib/indexedDB";
 
 const STORAGE_KEY = 'etf-viewer-settings';
 
@@ -40,7 +41,11 @@ interface Settings {
   endMonth: number;
   endYear: number;
   selectedETFs: ETFSymbol[];
-  etfData: ETFData[];
+}
+
+interface DateValidation {
+  startDate: boolean;
+  endDate: boolean;
 }
 
 export default function ETFViewer() {
@@ -62,8 +67,16 @@ export default function ETFViewer() {
   const [etfData, setEtfData] = useState<ETFData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [open, setOpen] = useState(false);
+  const [dateErrors, setDateErrors] = useState<DateValidation>({
+    startDate: false,
+    endDate: false,
+  });
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    clearOldCache(7);
+  }, []);
 
   useEffect(() => {
     try {
@@ -78,7 +91,6 @@ export default function ETFViewer() {
         setEndMonth(settings.endMonth || 12);
         setEndYear(settings.endYear || lastYear);
         setSelectedETFs(settings.selectedETFs || []);
-        setEtfData(settings.etfData || []);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -95,10 +107,29 @@ export default function ETFViewer() {
       endMonth,
       endYear,
       selectedETFs,
-      etfData,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  }, [apiKey, startDay, startMonth, startYear, endDay, endMonth, endYear, selectedETFs, etfData]);
+  }, [apiKey, startDay, startMonth, startYear, endDay, endMonth, endYear, selectedETFs]);
+
+  const isValidDate = (day: number, month: number, year: number): boolean => {
+    if (month < 1 || month > 12) return false;
+    if (day < 1) return false;
+    
+    const daysInMonth = new Date(year, month, 0).getDate();
+    return day <= daysInMonth;
+  };
+
+  const validateStartDate = () => {
+    const valid = isValidDate(startDay, startMonth, startYear);
+    setDateErrors(prev => ({ ...prev, startDate: !valid }));
+    return valid;
+  };
+
+  const validateEndDate = () => {
+    const valid = isValidDate(endDay, endMonth, endYear);
+    setDateErrors(prev => ({ ...prev, endDate: !valid }));
+    return valid;
+  };
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -185,30 +216,29 @@ export default function ETFViewer() {
       return;
     }
 
+    if (!validateStartDate() || !validateEndDate()) {
+      toast({
+        title: "Invalid Date",
+        description: "Please check your date inputs and fix any errors.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoadingData(true);
     const newEtfData: ETFData[] = [];
+    let cachedCount = 0;
+    let fetchedCount = 0;
 
     try {
       for (const etf of selectedETFs) {
         const startDate = `${startYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
         const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
         
-        const response = await fetch(
-          `https://api.twelvedata.com/time_series?symbol=${etf.symbol}&interval=1month&start_date=${startDate}&end_date=${endDate}&apikey=${apiKey}&outputsize=5000`
-        );
-        const data = await response.json();
-
-        if (data.status === "error") {
-          toast({
-            title: `Error fetching ${etf.symbol}`,
-            description: data.message || "Failed to fetch data",
-            variant: "destructive",
-          });
-          continue;
-        }
-
-        if (data.values && Array.isArray(data.values)) {
-          const monthlyData = data.values.reverse().map((v: any) => ({
+        const cachedData = await getCachedETFData(etf.symbol, startDate, endDate);
+        
+        if (cachedData && cachedData.values && Array.isArray(cachedData.values)) {
+          const monthlyData = cachedData.values.map((v: any) => ({
             date: v.datetime,
             close: parseFloat(v.close),
           }));
@@ -218,15 +248,51 @@ export default function ETFViewer() {
             name: etf.name,
             monthlyData,
           });
+          cachedCount++;
+        } else {
+          const response = await fetch(
+            `https://api.twelvedata.com/time_series?symbol=${etf.symbol}&interval=1month&start_date=${startDate}&end_date=${endDate}&apikey=${apiKey}&outputsize=5000`
+          );
+          const data = await response.json();
+
+          if (data.status === "error") {
+            toast({
+              title: `Error fetching ${etf.symbol}`,
+              description: data.message || "Failed to fetch data",
+              variant: "destructive",
+            });
+            continue;
+          }
+
+          if (data.values && Array.isArray(data.values)) {
+            const reversedData = {
+              ...data,
+              values: [...data.values].reverse()
+            };
+            await setCachedETFData(etf.symbol, startDate, endDate, reversedData);
+            
+            const monthlyData = reversedData.values.map((v: any) => ({
+              date: v.datetime,
+              close: parseFloat(v.close),
+            }));
+
+            newEtfData.push({
+              symbol: etf.symbol,
+              name: etf.name,
+              monthlyData,
+            });
+            fetchedCount++;
+          }
         }
       }
 
       setEtfData(newEtfData);
       
       if (newEtfData.length > 0) {
+        const cacheMsg = cachedCount > 0 ? ` (${cachedCount} from cache)` : '';
         toast({
           title: "Data Loaded",
-          description: `Successfully loaded data for ${newEtfData.length} ETF${newEtfData.length > 1 ? 's' : ''}`,
+          description: `Successfully loaded data for ${newEtfData.length} ETF${newEtfData.length > 1 ? 's' : ''}${cacheMsg}`,
         });
       }
     } catch (error) {
@@ -283,7 +349,7 @@ export default function ETFViewer() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label>Start Date</Label>
+                <Label className={dateErrors.startDate ? "text-destructive" : ""}>Start Date</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <Label htmlFor="start-day" className="text-xs text-muted-foreground">Day</Label>
@@ -295,6 +361,8 @@ export default function ETFViewer() {
                       max={31}
                       value={startDay}
                       onChange={(e) => setStartDay(Math.max(1, Math.min(31, parseInt(e.target.value) || 1)))}
+                      onBlur={validateStartDate}
+                      className={dateErrors.startDate ? "border-destructive" : ""}
                     />
                   </div>
                   <div className="space-y-1">
@@ -307,6 +375,8 @@ export default function ETFViewer() {
                       max={12}
                       value={startMonth}
                       onChange={(e) => setStartMonth(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))}
+                      onBlur={validateStartDate}
+                      className={dateErrors.startDate ? "border-destructive" : ""}
                     />
                   </div>
                   <div className="space-y-1">
@@ -319,13 +389,20 @@ export default function ETFViewer() {
                       max={currentYear}
                       value={startYear}
                       onChange={(e) => setStartYear(Math.max(1900, Math.min(currentYear, parseInt(e.target.value) || lastYear)))}
+                      onBlur={validateStartDate}
+                      className={dateErrors.startDate ? "border-destructive" : ""}
                     />
                   </div>
                 </div>
+                {dateErrors.startDate && (
+                  <p className="text-xs text-destructive" data-testid="error-start-date">
+                    Invalid date (e.g., Feb 30 doesn't exist)
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3">
-                <Label>End Date</Label>
+                <Label className={dateErrors.endDate ? "text-destructive" : ""}>End Date</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <Label htmlFor="end-day" className="text-xs text-muted-foreground">Day</Label>
@@ -337,6 +414,8 @@ export default function ETFViewer() {
                       max={31}
                       value={endDay}
                       onChange={(e) => setEndDay(Math.max(1, Math.min(31, parseInt(e.target.value) || 31)))}
+                      onBlur={validateEndDate}
+                      className={dateErrors.endDate ? "border-destructive" : ""}
                     />
                   </div>
                   <div className="space-y-1">
@@ -349,6 +428,8 @@ export default function ETFViewer() {
                       max={12}
                       value={endMonth}
                       onChange={(e) => setEndMonth(Math.max(1, Math.min(12, parseInt(e.target.value) || 12)))}
+                      onBlur={validateEndDate}
+                      className={dateErrors.endDate ? "border-destructive" : ""}
                     />
                   </div>
                   <div className="space-y-1">
@@ -361,9 +442,16 @@ export default function ETFViewer() {
                       max={currentYear}
                       value={endYear}
                       onChange={(e) => setEndYear(Math.max(1900, Math.min(currentYear, parseInt(e.target.value) || lastYear)))}
+                      onBlur={validateEndDate}
+                      className={dateErrors.endDate ? "border-destructive" : ""}
                     />
                   </div>
                 </div>
+                {dateErrors.endDate && (
+                  <p className="text-xs text-destructive" data-testid="error-end-date">
+                    Invalid date (e.g., Feb 30 doesn't exist)
+                  </p>
+                )}
               </div>
             </div>
 
