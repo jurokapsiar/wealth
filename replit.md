@@ -20,7 +20,10 @@ The application is a single-page application built with **React and TypeScript**
     *   Fetches and displays historical monthly closing prices from an external API.
     *   Provides month-over-month and year-over-year performance analysis.
     *   Supports comparison of multiple ETFs on interactive charts.
-    *   Allows custom date ranges for analysis.
+    *   Allows custom date ranges for analysis with real-time validation (highlights invalid dates like Feb 30).
+    *   **IndexedDB Caching**: Historical data cached for 24 hours to reduce API calls and improve performance.
+    *   **Cache-First Strategy**: Checks cache before making API calls, displays toast notification showing cached vs. fetched data.
+    *   **Mobile-Friendly Tables**: Horizontal scrolling for wide tables with sticky year column.
 *   **UI/UX**: Emphasizes a mobile-first, responsive design with a clean and intuitive interface. A sticky header with badges for quick navigation to cost entries is implemented for mobile users.
 *   **Project Structure**: The codebase is organized into `client/` (React app), `server/` (minimal Express), and `shared/` (type definitions).
 
