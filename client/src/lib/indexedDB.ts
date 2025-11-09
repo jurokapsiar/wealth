@@ -48,14 +48,7 @@ export async function getCachedETFData(
       request.onsuccess = () => {
         const result = request.result as CachedETFData | undefined;
         if (result) {
-          const ONE_DAY = 24 * 60 * 60 * 1000;
-          const isStale = Date.now() - result.timestamp > ONE_DAY;
-          
-          if (isStale) {
-            resolve(null);
-          } else {
-            resolve(result.data);
-          }
+          resolve(result.data);
         } else {
           resolve(null);
         }

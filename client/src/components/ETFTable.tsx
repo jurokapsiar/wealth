@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MonthlyDataPoint {
   date: string;
@@ -88,49 +87,47 @@ export function ETFTable({ etfData }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="w-full">
-          <div className="min-w-[800px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-bold sticky left-0 bg-background z-10">Year</TableHead>
-                  {MONTH_NAMES.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[70px]">
-                      {month}
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center font-bold min-w-[100px]">
-                    YoY Change
+        <div className="overflow-x-auto">
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-bold sticky left-0 bg-background z-10 w-20">Year</TableHead>
+                <TableHead className="text-center font-bold sticky left-20 bg-background z-10 w-24">
+                  YoY Change
+                </TableHead>
+                {MONTH_NAMES.map((month) => (
+                  <TableHead key={month} className="text-center min-w-[70px]">
+                    {month}
                   </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {yearData.map((yearRow) => (
-                  <TableRow key={yearRow.year} data-testid={`row-year-${yearRow.year}`}>
-                    <TableCell className="font-medium sticky left-0 bg-background z-10">
-                      {yearRow.year}
-                    </TableCell>
-                    {yearRow.months.map((value, monthIndex) => (
-                      <TableCell
-                        key={monthIndex}
-                        className="text-center text-sm"
-                        data-testid={`cell-${yearRow.year}-${monthIndex}`}
-                      >
-                        {formatValue(value)}
-                      </TableCell>
-                    ))}
-                    <TableCell
-                      className={`text-center font-semibold ${getChangeColor(yearRow.yearlyChange)}`}
-                      data-testid={`cell-yearly-change-${yearRow.year}`}
-                    >
-                      {formatPercentage(yearRow.yearlyChange)}
-                    </TableCell>
-                  </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
-        </ScrollArea>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {yearData.map((yearRow) => (
+                <TableRow key={yearRow.year} data-testid={`row-year-${yearRow.year}`}>
+                  <TableCell className="font-medium sticky left-0 bg-background z-10 w-20">
+                    {yearRow.year}
+                  </TableCell>
+                  <TableCell
+                    className={`text-center font-semibold sticky left-20 bg-background z-10 w-24 ${getChangeColor(yearRow.yearlyChange)}`}
+                    data-testid={`cell-yearly-change-${yearRow.year}`}
+                  >
+                    {formatPercentage(yearRow.yearlyChange)}
+                  </TableCell>
+                  {yearRow.months.map((value, monthIndex) => (
+                    <TableCell
+                      key={monthIndex}
+                      className="text-center text-sm"
+                      data-testid={`cell-${yearRow.year}-${monthIndex}`}
+                    >
+                      {formatValue(value)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

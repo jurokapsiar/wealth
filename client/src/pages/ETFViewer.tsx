@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, X, ArrowUp, TrendingUp } from "lucide-react";
 import { ETFTable } from "@/components/ETFTable";
 import { ETFChart } from "@/components/ETFChart";
-import { getCachedETFData, setCachedETFData, clearOldCache } from "@/lib/indexedDB";
+import { getCachedETFData, setCachedETFData } from "@/lib/indexedDB";
 
 const STORAGE_KEY = 'etf-viewer-settings';
 
@@ -73,10 +73,6 @@ export default function ETFViewer() {
   });
   
   const { toast } = useToast();
-
-  useEffect(() => {
-    clearOldCache(7);
-  }, []);
 
   useEffect(() => {
     try {
