@@ -21,9 +21,9 @@ The application is a single-page application built with **React and TypeScript**
     *   Provides month-over-month and year-over-year performance analysis.
     *   Supports comparison of multiple ETFs on interactive charts.
     *   Allows custom date ranges for analysis with real-time validation (highlights invalid dates like Feb 30).
-    *   **IndexedDB Caching**: Historical data cached for 24 hours to reduce API calls and improve performance.
+    *   **IndexedDB Caching**: Historical data cached permanently (no expiration) to reduce API calls and improve performance.
     *   **Cache-First Strategy**: Checks cache before making API calls, displays toast notification showing cached vs. fetched data.
-    *   **Mobile-Friendly Tables**: Horizontal scrolling for wide tables with sticky year column.
+    *   **Mobile-Friendly Tables**: Horizontal scrolling for wide tables with sticky Year and YoY Change columns at the beginning. Both columns remain visible during scroll with fixed widths (Year: 80px, YoY: 96px).
 *   **UI/UX**: Emphasizes a mobile-first, responsive design with a clean and intuitive interface. A sticky header with badges for quick navigation to cost entries is implemented for mobile users.
 *   **Project Structure**: The codebase is organized into `client/` (React app), `server/` (minimal Express), and `shared/` (type definitions).
 
