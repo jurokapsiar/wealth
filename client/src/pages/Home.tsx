@@ -371,7 +371,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background border-b shadow-sm">
+      <header className="sticky top-14 z-40 bg-background border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -554,7 +554,7 @@ export default function Home() {
 
       {/* Mobile sticky cost navigator - only show when costs exist */}
       {costs.length > 0 && (
-        <div className="sticky top-16 z-20 bg-background/95 backdrop-blur border-b shadow-sm md:hidden">
+        <div className="sticky top-[7.5rem] z-20 bg-background/95 backdrop-blur border-b shadow-sm md:hidden">
           <div className="container mx-auto px-4 py-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
               <DollarSign className="h-3 w-3" />
