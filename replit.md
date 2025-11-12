@@ -19,6 +19,7 @@ The application is a single-page application built with **React and TypeScript**
 *   **ETF Historical Data Viewer**:
     *   Fetches and displays historical monthly closing prices from an external API.
     *   Provides month-over-month and year-over-year performance analysis.
+    *   **CAGR Calculation**: Displays Compound Annual Growth Rate (average yearly percentage) for each ETF, accounting for cumulative multiplication across the entire data range.
     *   Supports comparison of multiple ETFs on interactive charts.
     *   Allows custom date ranges for analysis with real-time validation (highlights invalid dates like Feb 30).
     *   **IndexedDB Caching**: Historical data cached permanently (no expiration) to reduce API calls and improve performance.
