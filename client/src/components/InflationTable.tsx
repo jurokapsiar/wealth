@@ -28,7 +28,7 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 export function InflationTable({ inflationData }: Props) {
   const calculateCAGR = (): number | null => {
-    if (inflationData.data.length < 2) return null;
+    if (inflationData.data.length === 0) return null;
     
     const sortedData = [...inflationData.data].sort((a, b) => 
       new Date(a.DateTime).getTime() - new Date(b.DateTime).getTime()
@@ -59,7 +59,7 @@ export function InflationTable({ inflationData }: Props) {
       }
     });
     
-    if (yearValues.length < 2) return null;
+    if (yearValues.length === 0) return null;
     
     const totalAverage = yearValues.reduce((sum, val) => sum + val, 0) / yearValues.length;
     

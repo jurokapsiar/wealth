@@ -60,7 +60,7 @@ export function InflationChart({ data }: Props) {
   }, [data, selectedYear]);
 
   const calculateAvgInflation = (countryData: InflationDataPoint[]): number | null => {
-    if (countryData.length < 2) return null;
+    if (countryData.length === 0) return null;
     
     const yearValues: number[] = [];
     let currentYear = new Date(countryData[0].DateTime).getFullYear();
@@ -87,7 +87,7 @@ export function InflationChart({ data }: Props) {
       }
     });
     
-    if (yearValues.length < 2) return null;
+    if (yearValues.length === 0) return null;
     
     const totalAverage = yearValues.reduce((sum, val) => sum + val, 0) / yearValues.length;
     
