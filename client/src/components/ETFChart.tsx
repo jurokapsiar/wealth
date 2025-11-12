@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { Slider } from "@/components/ui/slider";
+import { useState, useMemo } from "react";
 
 interface MonthlyDataPoint {
   date: string;
@@ -32,27 +33,77 @@ const COLORS = [
 
 export function ETFChart({ data }: Props) {
   const [showPercentage, setShowPercentage] = useState(false);
-
-  const getInitialValues = () => {
-    const initialValues = new Map<string, number>();
-    
+  
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
     data.forEach((etf) => {
+      etf.monthlyData.forEach((point) => {
+        years.add(new Date(point.date).getFullYear());
+      });
+    });
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  const [selectedYearIndex, setSelectedYearIndex] = useState(0);
+  const selectedYear = availableYears[selectedYearIndex] || availableYears[0];
+
+  const getFilteredData = useMemo(() => {
+    return data.map((etf) => {
+      const filteredData = etf.monthlyData.filter((point) => {
+        const year = new Date(point.date).getFullYear();
+        return year >= selectedYear;
+      }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      return {
+        ...etf,
+        monthlyData: filteredData,
+      };
+    });
+  }, [data, selectedYear]);
+
+  const calculateCAGR = (etfData: MonthlyDataPoint[]): number | null => {
+    if (etfData.length < 2) return null;
+    
+    const firstPoint = etfData[0];
+    const lastPoint = etfData[etfData.length - 1];
+    
+    const firstDate = new Date(firstPoint.date);
+    const lastDate = new Date(lastPoint.date);
+    
+    const yearsDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    
+    if (yearsDiff <= 0 || firstPoint.close <= 0) return null;
+    
+    const cagr = (Math.pow(lastPoint.close / firstPoint.close, 1 / yearsDiff) - 1) * 100;
+    
+    return cagr;
+  };
+
+  const etfCAGRs = useMemo(() => {
+    const cagrMap = new Map<string, number | null>();
+    getFilteredData.forEach((etf) => {
+      cagrMap.set(etf.symbol, calculateCAGR(etf.monthlyData));
+    });
+    return cagrMap;
+  }, [getFilteredData]);
+
+  const getBaseValues = () => {
+    const baseValues = new Map<string, number>();
+    
+    getFilteredData.forEach((etf) => {
       if (etf.monthlyData.length > 0) {
-        const sortedData = [...etf.monthlyData].sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-        initialValues.set(etf.symbol, sortedData[0].close);
+        baseValues.set(etf.symbol, etf.monthlyData[0].close);
       }
     });
     
-    return initialValues;
+    return baseValues;
   };
 
   const prepareChartData = () => {
     const dateMap = new Map<string, any>();
-    const initialValues = getInitialValues();
+    const baseValues = getBaseValues();
 
-    data.forEach((etf) => {
+    getFilteredData.forEach((etf) => {
       etf.monthlyData.forEach((point) => {
         if (!dateMap.has(point.date)) {
           dateMap.set(point.date, { date: point.date });
@@ -60,9 +111,9 @@ export function ETFChart({ data }: Props) {
         const entry = dateMap.get(point.date);
         
         if (showPercentage) {
-          const initialValue = initialValues.get(etf.symbol);
-          if (initialValue && initialValue > 0) {
-            entry[etf.symbol] = ((point.close - initialValue) / initialValue) * 100;
+          const baseValue = baseValues.get(etf.symbol);
+          if (baseValue && baseValue > 0) {
+            entry[etf.symbol] = ((point.close - baseValue) / baseValue) * 100;
           }
         } else {
           entry[etf.symbol] = point.close;
@@ -99,6 +150,12 @@ export function ETFChart({ data }: Props) {
     return value.toFixed(0);
   };
 
+  const formatCAGR = (cagr: number | null) => {
+    if (cagr === null) return 'N/A';
+    const sign = cagr >= 0 ? '+' : '';
+    return `${sign}${cagr.toFixed(2)}%`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -107,8 +164,8 @@ export function ETFChart({ data }: Props) {
             <CardTitle>ETF Performance Chart</CardTitle>
             <CardDescription>
               {showPercentage 
-                ? 'Percentage increase compared to initial value'
-                : 'Historical closing prices over the selected date range'
+                ? `Percentage increase from ${selectedYear} baseline`
+                : `Historical closing prices from ${selectedYear}`
               }
             </CardDescription>
           </div>
@@ -127,6 +184,25 @@ export function ETFChart({ data }: Props) {
             </Label>
           </div>
         </div>
+        {availableYears.length > 1 && (
+          <div className="mt-6 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Starting Year: {selectedYear}</Label>
+              <span className="text-xs text-muted-foreground">
+                {availableYears[0]} - {availableYears[availableYears.length - 1]}
+              </span>
+            </div>
+            <Slider
+              value={[selectedYearIndex]}
+              onValueChange={(value) => setSelectedYearIndex(value[0])}
+              min={0}
+              max={availableYears.length - 1}
+              step={1}
+              className="w-full"
+              data-testid="slider-start-year"
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="h-[400px] w-full">
@@ -155,17 +231,20 @@ export function ETFChart({ data }: Props) {
                 }}
               />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
-              {data.map((etf, index) => (
-                <Line
-                  key={etf.symbol}
-                  type="monotone"
-                  dataKey={etf.symbol}
-                  stroke={COLORS[index % COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  name={`${etf.symbol} - ${etf.name}`}
-                />
-              ))}
+              {getFilteredData.map((etf, index) => {
+                const cagr = etfCAGRs.get(etf.symbol) ?? null;
+                return (
+                  <Line
+                    key={etf.symbol}
+                    type="monotone"
+                    dataKey={etf.symbol}
+                    stroke={COLORS[index % COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    name={`${etf.symbol} - ${formatCAGR(cagr)} avg/yr`}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
