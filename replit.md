@@ -1,7 +1,7 @@
-# Wealth Projection Calculator & ETF Viewer
+# Wealth Projection Calculator & Financial Data Viewers
 
 ## Overview
-This project provides a comprehensive financial planning application with two primary tools: a Wealth Projection Calculator and an ETF Historical Data Viewer. The **Wealth Projection Calculator** is a mobile-first tool designed to help users visualize their financial future by factoring in interest growth, inflation, investment income, and various expenses. The **ETF Historical Data Viewer** allows users to analyze past performance of Exchange Traded Funds using real-time data. The overarching goal is to empower users with clear insights into their financial trajectory and investment performance, enabling informed decision-making for long-term wealth management.
+This project provides a comprehensive financial planning application with three primary tools: a Wealth Projection Calculator, an ETF Historical Data Viewer, and an Inflation Historical Data Viewer. The **Wealth Projection Calculator** is a mobile-first tool designed to help users visualize their financial future by factoring in interest growth, inflation, investment income, and various expenses. The **ETF Historical Data Viewer** allows users to analyze past performance of Exchange Traded Funds using real-time data. The **Inflation Historical Data Viewer** enables users to track and compare inflation rates across countries over time. The overarching goal is to empower users with clear insights into their financial trajectory, investment performance, and economic trends, enabling informed decision-making for long-term wealth management.
 
 ## User Preferences
 I prefer simple language and clear explanations. I value immediate feedback and iterative development. Please ensure all calculations update in real-time as inputs are adjusted. I like clean, intuitive interfaces and prefer a mobile-first design approach. All data and settings should persist automatically in the browser's local storage. I expect to be able to manage multiple financial scenarios (save, load, and delete). I also prefer that any changes related to styling or UI components utilize Tailwind CSS and Shadcn UI.
@@ -28,6 +28,19 @@ The application is a single-page application built with **React and TypeScript**
     *   **IndexedDB Caching**: Historical data cached permanently (no expiration) to reduce API calls and improve performance.
     *   **Cache-First Strategy**: Checks cache before making API calls, displays toast notification showing cached vs. fetched data.
     *   **Mobile-Friendly Tables**: Horizontal scrolling for wide tables with sticky Year and YoY Change columns at the beginning. Both columns remain visible during scroll with fixed widths (Year: 80px, YoY: 96px).
+*   **Inflation Historical Data Viewer**:
+    *   Fetches and displays historical inflation rates by country from Trading Economics API.
+    *   **Country Selector**: Dropdown selector with all available countries, sorted alphabetically.
+    *   **Date Range Selection**: Custom date range inputs with real-time validation (same pattern as ETF viewer).
+    *   **Average Inflation Calculation**: Displays average inflation rate across all years for each country (arithmetic mean, not CAGR).
+    *   **Interactive Chart**: Line chart comparing inflation rates across multiple countries over time.
+    *   **Year Slider**: Interactive slider to select starting year for analysis, dynamically recalculating average inflation from selected year onward.
+    *   **Dynamic Legend**: Chart legend displays each country's average inflation rate (e.g., "United States - 2.45% avg"), updating in real-time as year slider changes.
+    *   **YoY Tables**: Year-over-year tables with sticky Year and Avg YoY columns at the beginning, showing average inflation for each year.
+    *   **Color Coding**: Visual indicators for inflation levels - red for high (≥3%), yellow for medium (≥2%), green for low (<2%).
+    *   **IndexedDB Caching**: Both country list and historical inflation data cached permanently (no expiration).
+    *   **Cache-First Strategy**: Checks cache before making API calls to minimize redundant requests.
+    *   **Mobile-Friendly Tables**: Horizontal scrolling with sticky columns (Year: 80px, Avg YoY: 96px).
 *   **UI/UX**: Emphasizes a mobile-first, responsive design with a clean and intuitive interface. A sticky header with badges for quick navigation to cost entries is implemented for mobile users.
 *   **Project Structure**: The codebase is organized into `client/` (React app), `server/` (minimal Express), and `shared/` (type definitions).
 

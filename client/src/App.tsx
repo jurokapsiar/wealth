@@ -6,7 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Home from "@/pages/Home";
 import ETFViewer from "@/pages/ETFViewer";
-import { Calculator, TrendingUp } from "lucide-react";
+import InflationViewer from "@/pages/InflationViewer";
+import { Calculator, TrendingUp, TrendingDown } from "lucide-react";
 
 function App() {
   const [activeTab, setActiveTab] = useState("calculator");
@@ -38,6 +39,15 @@ function App() {
                     <span className="hidden sm:inline">ETF Viewer</span>
                     <span className="sm:hidden">ETFs</span>
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="inflation"
+                    className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                    data-testid="tab-inflation"
+                  >
+                    <TrendingDown className="h-4 w-4" />
+                    <span className="hidden sm:inline">Inflation Viewer</span>
+                    <span className="sm:hidden">Inflation</span>
+                  </TabsTrigger>
                 </TabsList>
               </div>
             </div>
@@ -48,6 +58,10 @@ function App() {
             
             <TabsContent value="etf" className="mt-0">
               <ETFViewer />
+            </TabsContent>
+            
+            <TabsContent value="inflation" className="mt-0">
+              <InflationViewer />
             </TabsContent>
           </Tabs>
         </div>
