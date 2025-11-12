@@ -20,7 +20,8 @@ The application is a single-page application built with **React and TypeScript**
     *   Fetches and displays historical monthly closing prices from an external API.
     *   Provides month-over-month and year-over-year performance analysis.
     *   **CAGR Calculation**: Displays Compound Annual Growth Rate (average yearly percentage) for each ETF, accounting for cumulative multiplication across the entire data range.
-    *   Supports comparison of multiple ETFs on interactive charts.
+    *   Supports comparison of multiple ETFs on interactive charts with toggleable percentage view.
+    *   **Percentage Mode**: Charts can toggle between absolute prices and percentage increase from initial value, allowing direct performance comparison regardless of price scale.
     *   Allows custom date ranges for analysis with real-time validation (highlights invalid dates like Feb 30).
     *   **IndexedDB Caching**: Historical data cached permanently (no expiration) to reduce API calls and improve performance.
     *   **Cache-First Strategy**: Checks cache before making API calls, displays toast notification showing cached vs. fetched data.
