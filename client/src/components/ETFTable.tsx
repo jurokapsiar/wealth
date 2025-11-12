@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface MonthlyDataPoint {
   date: string;
@@ -25,6 +26,28 @@ interface YearData {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function ETFTable({ etfData }: Props) {
+  const calculateCAGR = (): number | null => {
+    if (etfData.monthlyData.length < 2) return null;
+    
+    const sortedData = [...etfData.monthlyData].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    const firstPoint = sortedData[0];
+    const lastPoint = sortedData[sortedData.length - 1];
+    
+    const firstDate = new Date(firstPoint.date);
+    const lastDate = new Date(lastPoint.date);
+    
+    const yearsDiff = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    
+    if (yearsDiff <= 0 || firstPoint.close <= 0) return null;
+    
+    const cagr = (Math.pow(lastPoint.close / firstPoint.close, 1 / yearsDiff) - 1) * 100;
+    
+    return cagr;
+  };
+
   const organizeDataByYear = (): YearData[] => {
     const yearMap = new Map<number, (number | null)[]>();
     
@@ -62,6 +85,7 @@ export function ETFTable({ etfData }: Props) {
   };
 
   const yearData = organizeDataByYear();
+  const cagr = calculateCAGR();
 
   const formatValue = (value: number | null) => {
     if (value === null) return '-';
@@ -82,9 +106,20 @@ export function ETFTable({ etfData }: Props) {
   return (
     <Card id={`table-${etfData.symbol}`}>
       <CardHeader>
-        <CardTitle className="text-lg">
-          {etfData.symbol} - {etfData.name}
-        </CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-lg">
+            {etfData.symbol} - {etfData.name}
+          </CardTitle>
+          {cagr !== null && (
+            <Badge 
+              variant="secondary" 
+              className={`text-sm font-semibold ${getChangeColor(cagr)}`}
+              data-testid={`badge-cagr-${etfData.symbol}`}
+            >
+              Avg. Yearly: {formatPercentage(cagr)}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
