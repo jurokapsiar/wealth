@@ -1,5 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 interface MonthlyDataPoint {
   date: string;
@@ -28,8 +31,26 @@ const COLORS = [
 ];
 
 export function ETFChart({ data }: Props) {
+  const [showPercentage, setShowPercentage] = useState(false);
+
+  const getInitialValues = () => {
+    const initialValues = new Map<string, number>();
+    
+    data.forEach((etf) => {
+      if (etf.monthlyData.length > 0) {
+        const sortedData = [...etf.monthlyData].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        initialValues.set(etf.symbol, sortedData[0].close);
+      }
+    });
+    
+    return initialValues;
+  };
+
   const prepareChartData = () => {
     const dateMap = new Map<string, any>();
+    const initialValues = getInitialValues();
 
     data.forEach((etf) => {
       etf.monthlyData.forEach((point) => {
@@ -37,7 +58,15 @@ export function ETFChart({ data }: Props) {
           dateMap.set(point.date, { date: point.date });
         }
         const entry = dateMap.get(point.date);
-        entry[etf.symbol] = point.close;
+        
+        if (showPercentage) {
+          const initialValue = initialValues.get(etf.symbol);
+          if (initialValue && initialValue > 0) {
+            entry[etf.symbol] = ((point.close - initialValue) / initialValue) * 100;
+          }
+        } else {
+          entry[etf.symbol] = point.close;
+        }
       });
     });
 
@@ -56,16 +85,48 @@ export function ETFChart({ data }: Props) {
   };
 
   const formatTooltipValue = (value: number) => {
+    if (showPercentage) {
+      const sign = value >= 0 ? '+' : '';
+      return `${sign}${value.toFixed(2)}%`;
+    }
     return value.toFixed(2);
+  };
+
+  const formatYAxis = (value: number) => {
+    if (showPercentage) {
+      return `${value.toFixed(0)}%`;
+    }
+    return value.toFixed(0);
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ETF Performance Chart</CardTitle>
-        <CardDescription>
-          Historical closing prices over the selected date range
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>ETF Performance Chart</CardTitle>
+            <CardDescription>
+              {showPercentage 
+                ? 'Percentage increase compared to initial value'
+                : 'Historical closing prices over the selected date range'
+              }
+            </CardDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="percentage-mode"
+              checked={showPercentage}
+              onCheckedChange={(checked) => setShowPercentage(checked as boolean)}
+              data-testid="checkbox-percentage-mode"
+            />
+            <Label
+              htmlFor="percentage-mode"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Show % Change
+            </Label>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[400px] w-full">
@@ -83,7 +144,7 @@ export function ETFChart({ data }: Props) {
                 textAnchor="end"
                 height={80}
               />
-              <YAxis className="text-xs" />
+              <YAxis className="text-xs" tickFormatter={formatYAxis} />
               <Tooltip
                 formatter={formatTooltipValue}
                 labelFormatter={formatDate}
