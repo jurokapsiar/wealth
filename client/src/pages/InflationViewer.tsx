@@ -133,9 +133,13 @@ export default function InflationViewer() {
         return;
       }
 
-      const response = await fetch(
-        'https://api.tradingeconomics.com/country/all/indicator/inflation%20rate?c=guest:guest'
-      );
+      const response = await fetch('/api/inflation/countries');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+      
       const data: CountryInfo[] = await response.json();
       
       if (Array.isArray(data)) {
@@ -152,7 +156,7 @@ export default function InflationViewer() {
     } catch (error) {
       toast({
         title: "Fetch Error",
-        description: "Failed to fetch countries from Trading Economics API",
+        description: error instanceof Error ? error.message : "Failed to fetch countries",
         variant: "destructive",
       });
     } finally {
@@ -210,8 +214,19 @@ export default function InflationViewer() {
           cachedCount++;
         } else {
           const response = await fetch(
-            `https://api.tradingeconomics.com/historical/country/${encodeURIComponent(country)}/indicator/inflation%20rate?c=guest:guest&from=${startDate}&to=${endDate}`
+            `/api/inflation/data/${encodeURIComponent(country)}?from=${startDate}&to=${endDate}`
           );
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            toast({
+              title: `Error fetching ${country}`,
+              description: errorData.error || `HTTP ${response.status}`,
+              variant: "destructive",
+            });
+            continue;
+          }
+
           const data: InflationDataPoint[] = await response.json();
 
           if (Array.isArray(data) && data.length > 0) {

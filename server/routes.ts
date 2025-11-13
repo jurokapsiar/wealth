@@ -89,6 +89,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: 'Invalid "to" date parameter. Expected YYYY-MM-DD format' });
     }
 
+    if (fromValidation.data > toValidation.data) {
+      return res.status(400).json({ error: 'Invalid date range: "from" date must be before or equal to "to" date' });
+    }
+
     const result = await fetchTradingEconomics(
       `/historical/country/${encodeURIComponent(country)}/indicator/inflation%20rate`,
       {
