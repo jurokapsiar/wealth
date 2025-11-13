@@ -46,5 +46,10 @@ The application is a single-page application built with **React and TypeScript**
 
 ## External Dependencies
 *   **Twelve Data API**: Used for fetching real-time and historical ETF data.
+*   **Trading Economics API**: Used for fetching inflation rate data by country (uses public guest:guest credentials via backend proxy).
 *   **Recharts**: A composable charting library for React used for interactive graphs.
 *   **Shadcn UI**: A collection of re-usable components built with Radix UI and Tailwind CSS.
+
+## Technical Implementation Notes
+*   **Backend Proxy**: The Inflation Viewer uses a backend proxy (`/api/inflation/countries` and `/api/inflation/data/:country`) to avoid CORS issues when calling the Trading Economics API. The proxy includes request timeouts (10s), Zod validation for date parameters, and proper error handling (400 for invalid params, 502 for upstream errors).
+*   **Guest API Limitations**: The Trading Economics guest API returns all countries via `/country` endpoint. Some countries may not have inflation rate data available; the application handles this gracefully by skipping countries without data instead of showing error toasts.

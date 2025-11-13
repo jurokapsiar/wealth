@@ -66,7 +66,7 @@ async function fetchTradingEconomics(path: string, searchParams?: Record<string,
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/inflation/countries', async (_req, res) => {
-    const result = await fetchTradingEconomics('/country/all/indicator/inflation%20rate');
+    const result = await fetchTradingEconomics('/country');
     return res.status(result.status).json(result.data);
   });
 

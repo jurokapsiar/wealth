@@ -14,9 +14,10 @@ const STORAGE_KEY = 'inflation-viewer-settings';
 
 interface CountryInfo {
   Country: string;
-  Category: string;
-  LatestValue: number;
-  LatestValueDate: string;
+  Continent: string;
+  Group: string;
+  ISO3: string;
+  ISO2: string;
 }
 
 interface InflationDataPoint {
@@ -219,11 +220,7 @@ export default function InflationViewer() {
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            toast({
-              title: `Error fetching ${country}`,
-              description: errorData.error || `HTTP ${response.status}`,
-              variant: "destructive",
-            });
+            console.warn(`No inflation data available for ${country}`);
             continue;
           }
 
@@ -241,11 +238,7 @@ export default function InflationViewer() {
             });
             fetchedCount++;
           } else {
-            toast({
-              title: `No data for ${country}`,
-              description: "No inflation data found for the selected date range",
-              variant: "destructive",
-            });
+            console.warn(`No inflation data found for ${country} in selected range`);
           }
         }
       }
