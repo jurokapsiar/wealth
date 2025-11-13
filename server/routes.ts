@@ -64,10 +64,42 @@ async function fetchTradingEconomics(path: string, searchParams?: Record<string,
   }
 }
 
+const CURATED_COUNTRIES = [
+  { Country: "United States", Continent: "North America", Group: "G7, G20, OECD", ISO3: "USA", ISO2: "US" },
+  { Country: "United Kingdom", Continent: "Europe", Group: "G7, G20, OECD", ISO3: "GBR", ISO2: "GB" },
+  { Country: "Germany", Continent: "Europe", Group: "European Union, G7, G20, OECD", ISO3: "DEU", ISO2: "DE" },
+  { Country: "France", Continent: "Europe", Group: "European Union, G7, G20, OECD", ISO3: "FRA", ISO2: "FR" },
+  { Country: "Italy", Continent: "Europe", Group: "European Union, G7, G20, OECD", ISO3: "ITA", ISO2: "IT" },
+  { Country: "Spain", Continent: "Europe", Group: "European Union, G20, OECD", ISO3: "ESP", ISO2: "ES" },
+  { Country: "Netherlands", Continent: "Europe", Group: "European Union, OECD", ISO3: "NLD", ISO2: "NL" },
+  { Country: "Belgium", Continent: "Europe", Group: "European Union, OECD", ISO3: "BEL", ISO2: "BE" },
+  { Country: "Austria", Continent: "Europe", Group: "European Union, OECD", ISO3: "AUT", ISO2: "AT" },
+  { Country: "Sweden", Continent: "Europe", Group: "European Union, OECD", ISO3: "SWE", ISO2: "SE" },
+  { Country: "Denmark", Continent: "Europe", Group: "European Union, OECD", ISO3: "DNK", ISO2: "DK" },
+  { Country: "Finland", Continent: "Europe", Group: "European Union, OECD", ISO3: "FIN", ISO2: "FI" },
+  { Country: "Poland", Continent: "Europe", Group: "European Union, OECD", ISO3: "POL", ISO2: "PL" },
+  { Country: "Portugal", Continent: "Europe", Group: "European Union, OECD", ISO3: "PRT", ISO2: "PT" },
+  { Country: "Greece", Continent: "Europe", Group: "European Union, OECD", ISO3: "GRC", ISO2: "GR" },
+  { Country: "Ireland", Continent: "Europe", Group: "European Union, OECD", ISO3: "IRL", ISO2: "IE" },
+  { Country: "Canada", Continent: "North America", Group: "G7, G20, OECD", ISO3: "CAN", ISO2: "CA" },
+  { Country: "Japan", Continent: "Asia", Group: "G7, G20, OECD", ISO3: "JPN", ISO2: "JP" },
+  { Country: "Australia", Continent: "Oceania", Group: "G20, OECD", ISO3: "AUS", ISO2: "AU" },
+  { Country: "South Korea", Continent: "Asia", Group: "G20, OECD", ISO3: "KOR", ISO2: "KR" },
+  { Country: "China", Continent: "Asia", Group: "G20", ISO3: "CHN", ISO2: "CN" },
+  { Country: "India", Continent: "Asia", Group: "G20", ISO3: "IND", ISO2: "IN" },
+  { Country: "Brazil", Continent: "South America", Group: "G20", ISO3: "BRA", ISO2: "BR" },
+  { Country: "Mexico", Continent: "North America", Group: "G20, OECD", ISO3: "MEX", ISO2: "MX" },
+  { Country: "Switzerland", Continent: "Europe", Group: "OECD", ISO3: "CHE", ISO2: "CH" },
+  { Country: "Norway", Continent: "Europe", Group: "OECD", ISO3: "NOR", ISO2: "NO" },
+  { Country: "New Zealand", Continent: "Oceania", Group: "OECD", ISO3: "NZL", ISO2: "NZ" },
+  { Country: "South Africa", Continent: "Africa", Group: "G20", ISO3: "ZAF", ISO2: "ZA" },
+  { Country: "Turkey", Continent: "Asia", Group: "G20, OECD", ISO3: "TUR", ISO2: "TR" },
+  { Country: "Russia", Continent: "Europe", Group: "G20", ISO3: "RUS", ISO2: "RU" },
+].sort((a, b) => a.Country.localeCompare(b.Country));
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/inflation/countries', async (_req, res) => {
-    const result = await fetchTradingEconomics('/country');
-    return res.status(result.status).json(result.data);
+    return res.status(200).json(CURATED_COUNTRIES);
   });
 
   app.get('/api/inflation/data/:country', async (req, res) => {

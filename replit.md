@@ -52,4 +52,4 @@ The application is a single-page application built with **React and TypeScript**
 
 ## Technical Implementation Notes
 *   **Backend Proxy**: The Inflation Viewer uses a backend proxy (`/api/inflation/countries` and `/api/inflation/data/:country`) to avoid CORS issues when calling the Trading Economics API. The proxy includes request timeouts (10s), Zod validation for date parameters, and proper error handling (400 for invalid params, 502 for upstream errors).
-*   **Guest API Limitations**: The Trading Economics guest API returns all countries via `/country` endpoint. Some countries may not have inflation rate data available; the application handles this gracefully by skipping countries without data instead of showing error toasts.
+*   **Curated Country List**: Since the Trading Economics guest API only provides 3 sample countries, the application includes a curated list of 30 major economies (US, EU countries, G7, G20 members) that are known to have reliable inflation data. Users with paid API keys can expand this list.
