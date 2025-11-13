@@ -128,7 +128,7 @@ export default function InflationViewer() {
     try {
       const cachedCountries = await getCachedCountries();
       
-      if (cachedCountries && cachedCountries.length > 0) {
+      if (cachedCountries && cachedCountries.length > 10) {
         setCountries(cachedCountries);
         setIsLoadingCountries(false);
         return;
