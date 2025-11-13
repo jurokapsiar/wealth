@@ -197,6 +197,7 @@ export default function InflationViewer() {
 
     setIsLoadingData(true);
     const newInflationData: InflationData[] = [];
+    const countriesWithoutData: string[] = [];
     let cachedCount = 0;
     let fetchedCount = 0;
 
@@ -219,8 +220,7 @@ export default function InflationViewer() {
           );
 
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.warn(`No inflation data available for ${country}`);
+            countriesWithoutData.push(country);
             continue;
           }
 
@@ -238,7 +238,7 @@ export default function InflationViewer() {
             });
             fetchedCount++;
           } else {
-            console.warn(`No inflation data found for ${country} in selected range`);
+            countriesWithoutData.push(country);
           }
         }
       }
@@ -250,6 +250,22 @@ export default function InflationViewer() {
         toast({
           title: "Data Loaded",
           description: `Successfully loaded data for ${newInflationData.length} ${newInflationData.length > 1 ? 'countries' : 'country'}${cacheMsg}`,
+        });
+      }
+
+      if (countriesWithoutData.length > 0) {
+        toast({
+          title: `No Data Available`,
+          description: `No inflation data found for: ${countriesWithoutData.join(', ')}. Try selecting different countries or date ranges.`,
+          variant: "destructive",
+        });
+      }
+
+      if (newInflationData.length === 0 && countriesWithoutData.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No inflation data was loaded. Please try different selections.",
+          variant: "destructive",
         });
       }
     } catch (error) {
