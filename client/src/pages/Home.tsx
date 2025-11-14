@@ -4,16 +4,17 @@ import { CostEntry, type Cost } from "@/components/CostEntry";
 import { InvestmentEntry, type Investment } from "@/components/InvestmentEntry";
 import { ProjectionTable, type YearProjection } from "@/components/ProjectionTable";
 import { ChartView } from "@/components/ChartView";
+import { ProjectionToolbar } from "@/components/ProjectionToolbar";
+import { ChartSettings } from "@/components/ChartSettings";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calculator, PlusCircle, TrendingUp, DollarSign, Save, FolderOpen, ChevronDown, Trash2 } from "lucide-react";
+import { Calculator, PlusCircle, Save, FolderOpen, ChevronDown, Trash2 } from "lucide-react";
 
 const STORAGE_KEY = 'wealth-projection-data';
 const SCENARIOS_KEY = 'wealth-projection-scenarios';
@@ -48,10 +49,16 @@ export default function Home() {
   const [maxYears, setMaxYears] = useState(30);
   const [isLoaded, setIsLoaded] = useState(false);
   
+  // Chart visibility state
+  const [showWealth, setShowWealth] = useState(true);
+  const [showWealthYear0, setShowWealthYear0] = useState(false);
+  const [useYear0Prices, setUseYear0Prices] = useState(false);
+  const [visibleInvestments, setVisibleInvestments] = useState<Set<string>>(new Set());
+  const [visibleCosts, setVisibleCosts] = useState<Set<string>>(new Set());
+  
   // Scenario management
   const [currentScenarioName, setCurrentScenarioName] = useState<string>("Default");
   const [savedScenarios, setSavedScenarios] = useState<Scenario[]>([]);
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveAsDialogOpen, setSaveAsDialogOpen] = useState(false);
   const [openDialogOpen, setOpenDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -60,20 +67,32 @@ export default function Home() {
   
   const { toast } = useToast();
   
-  // Refs for scrolling to costs
+  // Refs for scrolling
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const investmentsRef = useRef<HTMLDivElement>(null);
+  const costsRef = useRef<HTMLDivElement>(null);
+  const investmentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const costRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+
+  // Auto-sync chart visibility when investments/costs change
+  useEffect(() => {
+    setVisibleInvestments(new Set(investments.map(inv => inv.id)));
+  }, [investments]);
+
+  useEffect(() => {
+    setVisibleCosts(new Set(costs.filter(c => c.enabled).map(c => c.id)));
+  }, [costs]);
 
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      // Load current scenario
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data: StoredData = JSON.parse(stored);
         loadScenarioData(data);
       }
       
-      // Load saved scenarios list
       const scenariosStored = localStorage.getItem(SCENARIOS_KEY);
       if (scenariosStored) {
         setSavedScenarios(JSON.parse(scenariosStored));
@@ -90,7 +109,6 @@ export default function Home() {
     setInflation(data.inflation ?? 3.0);
     setStartYear(data.startYear ?? 2026);
     setBirthYear(data.birthYear ?? 1984);
-    // Migrate old costs to add enabled field if missing
     const migratedCosts = (data.costs ?? []).map(cost => ({
       ...cost,
       enabled: cost.enabled ?? true,
@@ -121,6 +139,18 @@ export default function Home() {
     }
   }, [initialWealth, yearlyInterest, inflation, startYear, birthYear, costs, investments, maxYears, isLoaded]);
 
+  const scrollToElement = (element: HTMLElement | null) => {
+    if (element && leftPanelRef.current) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const navigateToSection = (section: 'settings' | 'investments' | 'costs') => {
+    if (section === 'settings') scrollToElement(settingsRef.current);
+    else if (section === 'investments') scrollToElement(investmentsRef.current);
+    else if (section === 'costs') scrollToElement(costsRef.current);
+  };
+
   const addCost = () => {
     const newCost: Cost = {
       id: Date.now().toString(),
@@ -132,6 +162,15 @@ export default function Home() {
       enabled: true,
     };
     setCosts([...costs, newCost]);
+    
+    requestAnimationFrame(() => {
+      const element = costRefs.current[newCost.id];
+      if (element) {
+        scrollToElement(element);
+        const firstInput = element.querySelector('input');
+        firstInput?.focus();
+      }
+    });
   };
 
   const updateCost = (id: string, updatedCost: Cost) => {
@@ -151,6 +190,15 @@ export default function Home() {
       years: 1,
     };
     setInvestments([...investments, newInvestment]);
+    
+    requestAnimationFrame(() => {
+      const element = investmentRefs.current[newInvestment.id];
+      if (element) {
+        scrollToElement(element);
+        const firstInput = element.querySelector('input');
+        firstInput?.focus();
+      }
+    });
   };
 
   const updateInvestment = (id: string, updatedInvestment: Investment) => {
@@ -165,13 +213,24 @@ export default function Home() {
     setMaxYears(maxYears + 10);
   };
 
-  const scrollToCost = (costId: string) => {
-    const element = costRefs.current[costId];
-    if (element) {
-      const yOffset = -80; // Offset for sticky headers
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+  const toggleInvestment = (id: string) => {
+    const newSet = new Set(visibleInvestments);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
     }
+    setVisibleInvestments(newSet);
+  };
+
+  const toggleCost = (id: string) => {
+    const newSet = new Set(visibleCosts);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setVisibleCosts(newSet);
   };
   
   const getCurrentData = (): StoredData => ({
@@ -191,7 +250,6 @@ export default function Home() {
     
     let updatedScenarios: Scenario[];
     if (existingIndex >= 0) {
-      // Update existing
       updatedScenarios = [...savedScenarios];
       updatedScenarios[existingIndex] = {
         ...updatedScenarios[existingIndex],
@@ -199,7 +257,6 @@ export default function Home() {
         savedAt: Date.now(),
       };
     } else {
-      // Create new
       const newScenario: Scenario = {
         id: Date.now().toString(),
         name,
@@ -224,7 +281,6 @@ export default function Home() {
   const handleSave = () => {
     if (currentScenarioName) {
       saveScenario(currentScenarioName);
-      setSaveDialogOpen(false);
     } else {
       setSaveAsDialogOpen(true);
     }
@@ -372,12 +428,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-14 z-40 bg-background border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Calculator className="h-6 w-6 text-primary" />
+        <div className="container mx-auto px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
               <div>
-                <h1 className="text-xl font-bold sm:text-2xl">Wealth Projection Calculator</h1>
+                <h1 className="text-lg font-bold">Wealth Projection Calculator</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">
                   {currentScenarioName ? `Scenario: ${currentScenarioName}` : 'Unsaved scenario'}
                 </p>
@@ -385,39 +441,37 @@ export default function Home() {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Save button */}
               <Button
                 variant="outline"
-                size="default"
+                size="sm"
                 onClick={handleSave}
                 data-testid="button-save"
-                className="gap-2"
+                className="gap-1.5 h-8"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Save</span>
               </Button>
               
-              {/* Scenarios menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    size="default"
+                    size="sm"
                     data-testid="button-scenarios-menu"
-                    className="gap-2"
+                    className="gap-1.5 h-8"
                   >
-                    <FolderOpen className="h-4 w-4" />
+                    <FolderOpen className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Scenarios</span>
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => setSaveAsDialogOpen(true)} data-testid="menu-save-as">
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-3.5 w-3.5 mr-2" />
                     Save As...
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setOpenDialogOpen(true)} data-testid="menu-open">
-                    <FolderOpen className="h-4 w-4 mr-2" />
+                    <FolderOpen className="h-3.5 w-3.5 mr-2" />
                     Open Scenario...
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -426,6 +480,140 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      <div className="sticky top-[calc(3.5rem+56px)] z-30 bg-background/95 backdrop-blur border-b">
+        <div className="container mx-auto px-3 py-2">
+          <ProjectionToolbar
+            onAddInvestment={addInvestment}
+            onAddCost={addCost}
+            onNavigateToSection={navigateToSection}
+          />
+        </div>
+      </div>
+
+      <div className="container mx-auto px-3 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <ScrollArea className="h-[calc(100vh-220px)]" ref={leftPanelRef}>
+            <div className="space-y-3 pr-3">
+              <div ref={settingsRef}>
+                <SettingsCard
+                  initialWealth={initialWealth}
+                  yearlyInterest={yearlyInterest}
+                  inflation={inflation}
+                  startYear={startYear}
+                  birthYear={birthYear}
+                  onInitialWealthChange={setInitialWealth}
+                  onYearlyInterestChange={setYearlyInterest}
+                  onInflationChange={setInflation}
+                  onStartYearChange={setStartYear}
+                  onBirthYearChange={setBirthYear}
+                />
+              </div>
+
+              <div ref={investmentsRef}>
+                <h2 className="text-sm font-semibold mb-2">Investment Income</h2>
+                {investments.length === 0 ? (
+                  <div className="text-center py-6 px-3 border border-dashed rounded text-sm">
+                    <p className="text-muted-foreground">
+                      No investments yet. Use toolbar to add.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {investments.map((investment) => (
+                      <InvestmentEntry
+                        key={investment.id}
+                        ref={(el) => (investmentRefs.current[investment.id] = el)}
+                        investment={investment}
+                        onUpdate={(updated) => updateInvestment(investment.id, updated)}
+                        onRemove={() => removeInvestment(investment.id)}
+                        birthYear={birthYear}
+                        startYear={startYear}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div ref={costsRef}>
+                <h2 className="text-sm font-semibold mb-2">Projected Costs</h2>
+                {costs.length === 0 ? (
+                  <div className="text-center py-6 px-3 border border-dashed rounded text-sm">
+                    <p className="text-muted-foreground">
+                      No costs yet. Use toolbar to add.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {costs.map((cost) => (
+                      <CostEntry
+                        key={cost.id}
+                        ref={(el) => (costRefs.current[cost.id] = el)}
+                        cost={cost}
+                        onUpdate={(updated) => updateCost(cost.id, updated)}
+                        onRemove={() => removeCost(cost.id)}
+                        birthYear={birthYear}
+                        startYear={startYear}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+
+          <div className="space-y-2">
+            <div className="flex justify-end">
+              <ChartSettings
+                showWealth={showWealth}
+                showWealthYear0={showWealthYear0}
+                useYear0Prices={useYear0Prices}
+                visibleInvestments={visibleInvestments}
+                visibleCosts={visibleCosts}
+                investments={investments}
+                costs={costs}
+                onShowWealthChange={setShowWealth}
+                onShowWealthYear0Change={setShowWealthYear0}
+                onUseYear0PricesChange={setUseYear0Prices}
+                onToggleInvestment={toggleInvestment}
+                onToggleCost={toggleCost}
+              />
+            </div>
+            
+            <ChartView
+              projections={projections}
+              costs={costs}
+              investments={investments}
+              startingAge={startYear - birthYear}
+              inflation={inflation}
+              showWealth={showWealth}
+              showWealthYear0={showWealthYear0}
+              useYear0Prices={useYear0Prices}
+              visibleInvestments={visibleInvestments}
+              visibleCosts={visibleCosts}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <ProjectionTable projections={projections} />
+
+          {projections.length > 0 && (
+            <div className="flex justify-center">
+              <Button
+                onClick={extendYears}
+                data-testid="button-extend-years"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-8"
+              >
+                <PlusCircle className="h-3.5 w-3.5" />
+                Show 10 More Years
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Save As Dialog */}
       <Dialog open={saveAsDialogOpen} onOpenChange={setSaveAsDialogOpen}>
@@ -494,22 +682,23 @@ export default function Home() {
                 {savedScenarios.map((scenario) => (
                   <div
                     key={scenario.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover-elevate"
+                    className="flex items-center justify-between p-2 border rounded hover-elevate"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate" data-testid={`text-scenario-${scenario.id}`}>
+                      <p className="font-medium truncate text-sm" data-testid={`text-scenario-${scenario.id}`}>
                         {scenario.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Saved {new Date(scenario.savedAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 ml-2">
+                    <div className="flex items-center gap-1 ml-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => loadScenario(scenario)}
                         data-testid={`button-load-${scenario.id}`}
+                        className="h-7"
                       >
                         Open
                       </Button>
@@ -518,8 +707,9 @@ export default function Home() {
                         variant="ghost"
                         onClick={() => confirmDeleteScenario(scenario.id)}
                         data-testid={`button-delete-${scenario.id}`}
+                        className="h-7 w-7"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -551,144 +741,6 @@ export default function Home() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Mobile sticky cost navigator - only show when costs exist */}
-      {costs.length > 0 && (
-        <div className="sticky top-[7.5rem] z-20 bg-background/95 backdrop-blur border-b shadow-sm md:hidden">
-          <div className="container mx-auto px-4 py-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-              <DollarSign className="h-3 w-3" />
-              <span className="font-medium">Quick Jump to Costs:</span>
-            </div>
-            <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex gap-2 pb-2">
-                {costs.map((cost, index) => (
-                  <Badge
-                    key={cost.id}
-                    variant={cost.enabled ? "default" : "secondary"}
-                    className="cursor-pointer hover-elevate active-elevate-2 shrink-0"
-                    onClick={() => scrollToCost(cost.id)}
-                    data-testid={`badge-jump-cost-${cost.id}`}
-                  >
-                    {cost.name || `Cost ${index + 1}`}
-                  </Badge>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        </div>
-      )}
-
-      <main className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
-        <SettingsCard
-          initialWealth={initialWealth}
-          yearlyInterest={yearlyInterest}
-          inflation={inflation}
-          startYear={startYear}
-          birthYear={birthYear}
-          onInitialWealthChange={setInitialWealth}
-          onYearlyInterestChange={setYearlyInterest}
-          onInflationChange={setInflation}
-          onStartYearChange={setStartYear}
-          onBirthYearChange={setBirthYear}
-        />
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Investment Income</h2>
-            <Button
-              onClick={addInvestment}
-              data-testid="button-add-investment"
-              size="default"
-              className="gap-2"
-            >
-              <TrendingUp className="h-4 w-4" />
-              Add Investment
-            </Button>
-          </div>
-
-          {investments.length === 0 ? (
-            <div className="text-center py-8 px-4 border border-dashed rounded-lg">
-              <p className="text-muted-foreground">
-                No investments added yet. Click "Add Investment" to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {investments.map((investment) => (
-                <InvestmentEntry
-                  key={investment.id}
-                  investment={investment}
-                  onUpdate={(updatedInvestment) => updateInvestment(investment.id, updatedInvestment)}
-                  onRemove={() => removeInvestment(investment.id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Projected Costs</h2>
-            <Button
-              onClick={addCost}
-              data-testid="button-add-cost"
-              size="default"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Cost
-            </Button>
-          </div>
-
-          {costs.length === 0 ? (
-            <div className="text-center py-8 px-4 border border-dashed rounded-lg">
-              <p className="text-muted-foreground">
-                No costs added yet. Click "Add Cost" to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {costs.map((cost) => (
-                <div
-                  key={cost.id}
-                  ref={(el) => (costRefs.current[cost.id] = el)}
-                >
-                  <CostEntry
-                    cost={cost}
-                    onUpdate={(updatedCost) => updateCost(cost.id, updatedCost)}
-                    onRemove={() => removeCost(cost.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <ChartView 
-          projections={projections} 
-          costs={costs} 
-          investments={investments}
-          startingAge={startYear - birthYear}
-          inflation={inflation}
-        />
-
-        <ProjectionTable projections={projections} />
-
-        {projections.length > 0 && (
-          <div className="flex justify-center pb-6">
-            <Button
-              onClick={extendYears}
-              data-testid="button-extend-years"
-              variant="outline"
-              className="gap-2"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Show 10 More Years
-            </Button>
-          </div>
-        )}
-      </main>
     </div>
   );
 }

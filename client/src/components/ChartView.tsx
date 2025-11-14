@@ -1,7 +1,5 @@
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { useState, useMemo, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   LineChart,
@@ -23,6 +21,11 @@ interface ChartViewProps {
   investments: Investment[];
   startingAge: number;
   inflation: number;
+  showWealth: boolean;
+  showWealthYear0: boolean;
+  useYear0Prices: boolean;
+  visibleInvestments: Set<string>;
+  visibleCosts: Set<string>;
 }
 
 const COLORS = {
@@ -38,37 +41,18 @@ const generateColor = (baseHue: number, index: number, total: number) => {
   return `hsl(${baseHue + (index * 30) % 60}, ${saturation}%, ${lightness}%)`;
 };
 
-export function ChartView({ projections, costs, investments, startingAge, inflation }: ChartViewProps) {
-  const [showWealth, setShowWealth] = useState(true);
-  const [showWealthYear0, setShowWealthYear0] = useState(false);
-  const [useYear0Prices, setUseYear0Prices] = useState(false);
-  const [visibleInvestments, setVisibleInvestments] = useState<Set<string>>(
-    new Set(investments.map((inv) => inv.id))
-  );
-  const [visibleCosts, setVisibleCosts] = useState<Set<string>>(
-    new Set(costs.map((cost) => cost.id))
-  );
-
-  const toggleInvestment = (id: string) => {
-    const newSet = new Set(visibleInvestments);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    setVisibleInvestments(newSet);
-  };
-
-  const toggleCost = (id: string) => {
-    const newSet = new Set(visibleCosts);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    setVisibleCosts(newSet);
-  };
-
+export function ChartView({ 
+  projections, 
+  costs, 
+  investments, 
+  startingAge, 
+  inflation,
+  showWealth,
+  showWealthYear0,
+  useYear0Prices,
+  visibleInvestments,
+  visibleCosts,
+}: ChartViewProps) {
   const chartData = useMemo(() => {
     return projections.map((proj) => {
       const age = startingAge + proj.yearNumber;
@@ -123,8 +107,8 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
     if (active && payload && payload.length) {
       const year = payload[0]?.payload?.calendarYear;
       return (
-        <div className="bg-card border rounded-lg p-3 shadow-lg">
-          <p className="font-semibold mb-2">
+        <div className="bg-card border rounded p-2 shadow-lg">
+          <p className="font-semibold mb-1 text-sm">
             {label} ({year})
           </p>
           {payload.map((entry: any, index: number) => {
@@ -135,7 +119,7 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
               displayValue = entry.payload.wealthYear0Actual;
             }
             return (
-              <p key={index} style={{ color: entry.color }} className="text-sm">
+              <p key={index} style={{ color: entry.color }} className="text-xs">
                 {entry.name}: {formatCurrency(displayValue)}
               </p>
             );
@@ -149,11 +133,8 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
   if (projections.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Chart View</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-8">
+        <CardContent className="py-12">
+          <p className="text-muted-foreground text-center text-sm">
             No projection data to display. Add some investments or costs to see the chart.
           </p>
         </CardContent>
@@ -165,134 +146,34 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Chart View</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
-          <Checkbox
-            id="year0-prices"
-            checked={useYear0Prices}
-            onCheckedChange={(checked) => setUseYear0Prices(checked as boolean)}
-            data-testid="checkbox-year0-prices"
-          />
-          <Label htmlFor="year0-prices" className="cursor-pointer font-medium">
-            Show values in Year 0 prices (inflation-adjusted)
-          </Label>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm">Wealth</h3>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="wealth-toggle"
-                checked={showWealth}
-                onCheckedChange={(checked) => setShowWealth(checked as boolean)}
-                data-testid="checkbox-wealth"
-              />
-              <Label htmlFor="wealth-toggle" className="cursor-pointer">
-                Net Wealth (Nominal)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="wealth-year0-toggle"
-                checked={showWealthYear0}
-                onCheckedChange={(checked) => setShowWealthYear0(checked as boolean)}
-                data-testid="checkbox-wealth-year0"
-              />
-              <Label htmlFor="wealth-year0-toggle" className="cursor-pointer">
-                Net Wealth (Year 0 Prices)
-              </Label>
-            </div>
-          </div>
-
-          {investments.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-green-600 dark:text-green-400">
-                Investments
-              </h3>
-              {investments.map((investment, index) => (
-                <div key={investment.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`inv-${investment.id}`}
-                    checked={visibleInvestments.has(investment.id)}
-                    onCheckedChange={() => toggleInvestment(investment.id)}
-                    data-testid={`checkbox-investment-${investment.id}`}
-                  />
-                  <Label
-                    htmlFor={`inv-${investment.id}`}
-                    className="cursor-pointer text-sm"
-                  >
-                    <span
-                      className="inline-block w-3 h-3 rounded-full mr-2"
-                      style={{
-                        backgroundColor: generateColor(142, index, investments.length),
-                      }}
-                    />
-                    {investment.name || "Unnamed Investment"}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {costs.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-red-600 dark:text-red-400">
-                Costs
-              </h3>
-              {costs.map((cost, index) => (
-                <div key={cost.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`cost-${cost.id}`}
-                    checked={visibleCosts.has(cost.id)}
-                    onCheckedChange={() => toggleCost(cost.id)}
-                    data-testid={`checkbox-cost-${cost.id}`}
-                  />
-                  <Label htmlFor={`cost-${cost.id}`} className="cursor-pointer text-sm">
-                    <span
-                      className="inline-block w-3 h-3 rounded-full mr-2"
-                      style={{
-                        backgroundColor: generateColor(0, index, costs.length),
-                      }}
-                    />
-                    {cost.name || "Unnamed Cost"}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
+      <CardContent className="p-3">
         <ScrollArea className="w-full">
           <div style={{ width: chartWidth, minWidth: "100%" }}>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="year"
                   className="text-xs"
-                  tick={{ fill: "hsl(var(--foreground))" }}
+                  tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{ fill: "hsl(var(--foreground))" }}
+                  tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
                   tickFormatter={(value) => formatCurrency(value).replace("$", "$")}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
 
                 {showWealth && (
                   <Line
                     type="monotone"
                     dataKey="wealth"
                     stroke={COLORS.wealth}
-                    strokeWidth={3}
+                    strokeWidth={2.5}
                     name="Net Wealth (Nominal)"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
                   />
                 )}
 
@@ -301,11 +182,11 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
                     type="monotone"
                     dataKey="wealthYear0"
                     stroke={COLORS.wealthYear0}
-                    strokeWidth={3}
-                    strokeDasharray="8 4"
-                    name="Net Wealth (Year 0 Prices)"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    strokeWidth={2.5}
+                    strokeDasharray="6 3"
+                    name="Net Wealth (Year 0)"
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
                   />
                 )}
 
@@ -317,10 +198,10 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
                       type="monotone"
                       dataKey={`inv_${investment.id}`}
                       stroke={generateColor(142, index, investments.length)}
-                      strokeWidth={2}
-                      name={investment.name || "Unnamed Investment"}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      strokeWidth={1.5}
+                      name={investment.name || "Unnamed"}
+                      dot={{ r: 2 }}
+                      activeDot={{ r: 4 }}
                     />
                   );
                 })}
@@ -333,11 +214,11 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
                       type="monotone"
                       dataKey={`cost_${cost.id}`}
                       stroke={generateColor(0, index, costs.length)}
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      name={cost.name || "Unnamed Cost"}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      name={cost.name || "Unnamed"}
+                      dot={{ r: 2 }}
+                      activeDot={{ r: 4 }}
                     />
                   );
                 })}
@@ -347,16 +228,11 @@ export function ChartView({ projections, costs, investments, startingAge, inflat
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>
-            <strong>Tip:</strong> Hover over the chart to see detailed values. Use the scroll bar to navigate through years.
+        {useYear0Prices && (
+          <p className="text-xs text-muted-foreground mt-2">
+            <strong>Year 0 Prices:</strong> Values shown in today's purchasing power
           </p>
-          {useYear0Prices && (
-            <p className="text-primary">
-              <strong>Year 0 Prices:</strong> All investment and cost values are shown in today's purchasing power, adjusted for inflation.
-            </p>
-          )}
-        </div>
+        )}
       </CardContent>
     </Card>
   );
