@@ -79,11 +79,20 @@ export default function InflationViewer() {
         if (settings.selectedCountries && Array.isArray(settings.selectedCountries)) {
           const migratedCountries = settings.selectedCountries
             .map(countryOrIso3 => {
-              if (countryOrIso3.length === 3 && countryOrIso3 === countryOrIso3.toUpperCase()) {
-                return countryOrIso3;
+              const normalized = countryOrIso3.trim().toUpperCase();
+              
+              if (normalized.length === 3) {
+                const foundByIso3 = countryList.find(c => c.iso3 === normalized);
+                if (foundByIso3) {
+                  return foundByIso3.iso3;
+                }
               }
-              const found = countryList.find(c => c.name === countryOrIso3);
-              return found ? found.iso3 : null;
+              
+              const foundByName = countryList.find(c => 
+                c.name.toLowerCase() === countryOrIso3.toLowerCase()
+              );
+              
+              return foundByName ? foundByName.iso3 : null;
             })
             .filter((iso3): iso3 is string => iso3 !== null);
           

@@ -29,27 +29,34 @@ The application is a single-page application built with **React and TypeScript**
     *   **Cache-First Strategy**: Checks cache before making API calls, displays toast notification showing cached vs. fetched data.
     *   **Mobile-Friendly Tables**: Horizontal scrolling for wide tables with sticky Year and YoY Change columns at the beginning. Both columns remain visible during scroll with fixed widths (Year: 80px, YoY: 96px).
 *   **Inflation Historical Data Viewer**:
-    *   Fetches and displays historical inflation rates by country from Trading Economics API.
-    *   **Country Selector**: Dropdown selector with all available countries, sorted alphabetically.
+    *   Loads and displays historical inflation rates (2000-2023) from CSV files in World Bank format.
+    *   **CSV Data Source**: 30 countries with monthly data stored in `/public/data/inflation/{ISO3}.csv`
+    *   **Country Selector**: Dropdown selector with 30 major economies (US, EU, G7, G20), sorted alphabetically.
     *   **Date Range Selection**: Custom date range inputs with real-time validation (same pattern as ETF viewer).
     *   **Average Inflation Calculation**: Displays average inflation rate across all years for each country (arithmetic mean, not CAGR).
     *   **Interactive Chart**: Line chart comparing inflation rates across multiple countries over time.
     *   **Year Slider**: Interactive slider to select starting year for analysis, dynamically recalculating average inflation from selected year onward.
-    *   **Dynamic Legend**: Chart legend displays each country's average inflation rate (e.g., "United States - 2.45% avg"), updating in real-time as year slider changes.
+    *   **Dynamic Legend**: Chart legend displays each country's average inflation rate (e.g., "United States - 2.09% avg"), updating in real-time as year slider changes.
     *   **YoY Tables**: Year-over-year tables with sticky Year and Avg YoY columns at the beginning, showing average inflation for each year.
     *   **Color Coding**: Visual indicators for inflation levels - red for high (≥3%), yellow for medium (≥2%), green for low (<2%).
-    *   **IndexedDB Caching**: Both country list and historical inflation data cached permanently (no expiration).
-    *   **Cache-First Strategy**: Checks cache before making API calls to minimize redundant requests.
+    *   **Dual Caching**: In-memory cache for instant reloads + IndexedDB for permanent storage (cache version: v2).
+    *   **Legacy Cache Migration**: Automatically migrates old Trading Economics cache entries to new CSV format in background.
+    *   **CSV Lazy Loading**: CSV files loaded on-demand per country with retry logic (2 attempts, 500ms delay).
     *   **Mobile-Friendly Tables**: Horizontal scrolling with sticky columns (Year: 80px, Avg YoY: 96px).
 *   **UI/UX**: Emphasizes a mobile-first, responsive design with a clean and intuitive interface. A sticky header with badges for quick navigation to cost entries is implemented for mobile users.
 *   **Project Structure**: The codebase is organized into `client/` (React app), `server/` (minimal Express), and `shared/` (type definitions).
 
 ## External Dependencies
 *   **Twelve Data API**: Used for fetching real-time and historical ETF data.
-*   **Trading Economics API**: Used for fetching inflation rate data by country (uses public guest:guest credentials via backend proxy).
 *   **Recharts**: A composable charting library for React used for interactive graphs.
 *   **Shadcn UI**: A collection of re-usable components built with Radix UI and Tailwind CSS.
 
 ## Technical Implementation Notes
-*   **Backend Proxy**: The Inflation Viewer uses a backend proxy (`/api/inflation/countries` and `/api/inflation/data/:country`) to avoid CORS issues when calling the Trading Economics API. The proxy includes request timeouts (10s), Zod validation for date parameters, and proper error handling (400 for invalid params, 502 for upstream errors).
-*   **Curated Country List**: Since the Trading Economics guest API only provides 3 sample countries, the application includes a curated list of 30 major economies (US, EU countries, G7, G20 members) that are known to have reliable inflation data. Users with paid API keys can expand this list.
+*   **Inflation Data Architecture**: The Inflation Viewer is fully frontend-based, loading CSV files from `/public/data/inflation/` directory:
+    *   **CSV Format**: World Bank format with Year,Month,Value columns (288 rows per country: 2000-2023, monthly)
+    *   **Static File Serving**: Express serves `/public` directory in development mode via `express.static('public')`
+    *   **Cache Strategy**: Check in-memory cache → check IndexedDB v2 cache → check legacy cache → fetch CSV
+    *   **Data Validation**: All data points validated (year>1900, 1≤month≤12, value is number); invalid points logged and skipped
+    *   **Legacy Migration**: Old Trading Economics cache entries automatically migrated to v2 format in background
+    *   **localStorage Migration**: User selections automatically converted from country names to ISO3 codes on first load
+*   **Curated Country List**: The application includes 30 major economies (US, EU countries, G7, G20 members) with reliable inflation data from 2000-2023.

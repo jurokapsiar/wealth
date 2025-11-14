@@ -24,10 +24,21 @@ export interface CountryInflationData {
 }
 
 const inMemoryCache = new Map<string, InflationDataPoint[]>();
+const CACHE_VERSION = 'v2';
 
 function parseCsvData(csvText: string, iso3: string): InflationDataPoint[] {
   const lines = csvText.trim().split('\n');
   const dataPoints: InflationDataPoint[] = [];
+  
+  if (lines.length < 2) {
+    console.warn(`CSV for ${iso3} has insufficient data`);
+    return dataPoints;
+  }
+  
+  const header = lines[0].toLowerCase();
+  if (!header.includes('year') || !header.includes('value')) {
+    console.warn(`CSV for ${iso3} has unexpected header: ${header}`);
+  }
   
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -67,14 +78,15 @@ async function loadCountryCsv(iso3: string): Promise<string> {
 export async function loadCountryInflationData(
   iso3: string,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  retryCount = 0
 ): Promise<CountryInflationData> {
   const country = getCountryByIso3(iso3);
   if (!country) {
     throw new Error(`Country ${iso3} not found in manifest`);
   }
   
-  const cacheKey = `inflation-${iso3}`;
+  const cacheKey = `inflation-${CACHE_VERSION}-${iso3}`;
   
   if (inMemoryCache.has(cacheKey)) {
     const cachedData = inMemoryCache.get(cacheKey)!;
@@ -85,49 +97,106 @@ export async function loadCountryInflationData(
     };
   }
   
-  const indexedDbData = await getCachedInflationData(iso3, '2000-01-01', '2023-12-31');
+  let indexedDbData = await getCachedInflationData(`${CACHE_VERSION}-${iso3}`, '2000-01-01', '2023-12-31');
+  let isLegacyData = false;
+  
+  if (!indexedDbData || !indexedDbData.data || indexedDbData.data.length === 0) {
+    const legacyData = await getCachedInflationData(iso3, '2000-01-01', '2023-12-31');
+    if (legacyData && legacyData.data && legacyData.data.length > 0) {
+      indexedDbData = legacyData;
+      isLegacyData = true;
+    }
+  }
+  
   if (indexedDbData && indexedDbData.data && indexedDbData.data.length > 0) {
-    const parsedData = indexedDbData.data.map((d: any) => ({
-      year: d.year || parseInt(d.DateTime?.split('-')[0] || '0', 10),
-      month: d.month || parseInt(d.DateTime?.split('-')[1] || '1', 10),
-      value: d.value || d.Value || 0,
-      dateString: d.dateString || d.DateTime || `${d.year || 2000}-${(d.month || 1).toString().padStart(2, '0')}-01`
-    }));
+    const parsedData: InflationDataPoint[] = [];
     
-    inMemoryCache.set(cacheKey, parsedData);
+    for (const d of indexedDbData.data) {
+      const year = d.year || parseInt(d.DateTime?.split('-')[0] || '0', 10);
+      const month = d.month || parseInt(d.DateTime?.split('-')[1] || '1', 10);
+      const value = d.value || d.Value;
+      
+      if (year > 1900 && month >= 1 && month <= 12 && typeof value === 'number' && !isNaN(value)) {
+        parsedData.push({
+          year,
+          month,
+          value,
+          dateString: `${year}-${month.toString().padStart(2, '0')}-01`
+        });
+      } else {
+        console.warn(`Skipping invalid inflation data point for ${iso3}:`, { year, month, value });
+      }
+    }
+    
+    if (parsedData.length > 0) {
+      inMemoryCache.set(cacheKey, parsedData);
+      
+      if (isLegacyData) {
+        const cacheData = {
+          country: country.name,
+          data: parsedData.map(dp => ({
+            Country: country.name,
+            Category: 'Inflation',
+            DateTime: dp.dateString,
+            Value: dp.value,
+            year: dp.year,
+            month: dp.month,
+            value: dp.value,
+            dateString: dp.dateString
+          }))
+        };
+        
+        setCachedInflationData(`${CACHE_VERSION}-${iso3}`, '2000-01-01', '2023-12-31', cacheData)
+          .then(() => console.log(`Migrated cache for ${iso3} from v1 to ${CACHE_VERSION}`))
+          .catch(error => console.error(`Failed to migrate cache for ${iso3}:`, error));
+      }
+      
+      return {
+        country: country.name,
+        iso3,
+        data: filterByDateRange(parsedData, startDate, endDate)
+      };
+    }
+  }
+  
+  try {
+    const csvText = await loadCountryCsv(iso3);
+    const dataPoints = parseCsvData(csvText, iso3);
+    
+    if (dataPoints.length === 0) {
+      throw new Error(`No data parsed from CSV for ${iso3}`);
+    }
+    
+    inMemoryCache.set(cacheKey, dataPoints);
+    
+    const cacheData = {
+      country: country.name,
+      data: dataPoints.map(dp => ({
+        Country: country.name,
+        Category: 'Inflation',
+        DateTime: dp.dateString,
+        Value: dp.value,
+        year: dp.year,
+        month: dp.month,
+        value: dp.value,
+        dateString: dp.dateString
+      }))
+    };
+    await setCachedInflationData(`${CACHE_VERSION}-${iso3}`, '2000-01-01', '2023-12-31', cacheData);
     
     return {
       country: country.name,
       iso3,
-      data: filterByDateRange(parsedData, startDate, endDate)
+      data: filterByDateRange(dataPoints, startDate, endDate)
     };
+  } catch (error) {
+    if (retryCount < 2) {
+      console.log(`Retrying load for ${iso3} (attempt ${retryCount + 1}/2)`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return loadCountryInflationData(iso3, startDate, endDate, retryCount + 1);
+    }
+    throw error;
   }
-  
-  const csvText = await loadCountryCsv(iso3);
-  const dataPoints = parseCsvData(csvText, iso3);
-  
-  inMemoryCache.set(cacheKey, dataPoints);
-  
-  const cacheData = {
-    country: country.name,
-    data: dataPoints.map(dp => ({
-      Country: country.name,
-      Category: 'Inflation',
-      DateTime: dp.dateString,
-      Value: dp.value,
-      year: dp.year,
-      month: dp.month,
-      value: dp.value,
-      dateString: dp.dateString
-    }))
-  };
-  await setCachedInflationData(iso3, '2000-01-01', '2023-12-31', cacheData);
-  
-  return {
-    country: country.name,
-    iso3,
-    data: filterByDateRange(dataPoints, startDate, endDate)
-  };
 }
 
 function filterByDateRange(
