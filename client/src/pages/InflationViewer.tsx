@@ -8,19 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowUp, TrendingUp } from "lucide-react";
 import { InflationTable } from "@/components/InflationTable";
 import { InflationChart } from "@/components/InflationChart";
-import { getCachedInflationData, setCachedInflationData, getCachedCountries, setCachedCountries } from "@/lib/indexedDB";
+import { getCountries, loadCountryInflationData, type CountryMetadata } from "@/lib/inflationDataLoader";
 
 const STORAGE_KEY = 'inflation-viewer-settings';
 
-interface CountryInfo {
-  Country: string;
-  Continent: string;
-  Group: string;
-  ISO3: string;
-  ISO2: string;
-}
-
-interface InflationDataPoint {
+interface LegacyInflationDataPoint {
   Country: string;
   Category: string;
   DateTime: string;
@@ -29,7 +21,7 @@ interface InflationDataPoint {
 
 interface InflationData {
   country: string;
-  data: InflationDataPoint[];
+  data: LegacyInflationDataPoint[];
 }
 
 interface Settings {
@@ -58,8 +50,7 @@ export default function InflationViewer() {
   const [endMonth, setEndMonth] = useState(12);
   const [endYear, setEndYear] = useState(lastYear);
   
-  const [countries, setCountries] = useState<CountryInfo[]>([]);
-  const [isLoadingCountries, setIsLoadingCountries] = useState(false);
+  const [countries, setCountries] = useState<CountryMetadata[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [inflationData, setInflationData] = useState<InflationData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -71,6 +62,9 @@ export default function InflationViewer() {
   const { toast } = useToast();
 
   useEffect(() => {
+    const countryList = getCountries();
+    setCountries(countryList);
+    
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -81,13 +75,24 @@ export default function InflationViewer() {
         setEndDay(settings.endDay || 31);
         setEndMonth(settings.endMonth || 12);
         setEndYear(settings.endYear || lastYear);
-        setSelectedCountries(settings.selectedCountries || []);
+        
+        if (settings.selectedCountries && Array.isArray(settings.selectedCountries)) {
+          const migratedCountries = settings.selectedCountries
+            .map(countryOrIso3 => {
+              if (countryOrIso3.length === 3 && countryOrIso3 === countryOrIso3.toUpperCase()) {
+                return countryOrIso3;
+              }
+              const found = countryList.find(c => c.name === countryOrIso3);
+              return found ? found.iso3 : null;
+            })
+            .filter((iso3): iso3 is string => iso3 !== null);
+          
+          setSelectedCountries(migratedCountries);
+        }
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
-    
-    fetchCountries();
   }, []);
 
   useEffect(() => {
@@ -123,57 +128,22 @@ export default function InflationViewer() {
     return valid;
   };
 
-  const fetchCountries = async () => {
-    setIsLoadingCountries(true);
-    try {
-      const cachedCountries = await getCachedCountries();
-      
-      if (cachedCountries && cachedCountries.length > 10) {
-        setCountries(cachedCountries);
-        setIsLoadingCountries(false);
-        return;
-      }
-
-      const response = await fetch('/api/inflation/countries');
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-      
-      const data: CountryInfo[] = await response.json();
-      
-      if (Array.isArray(data)) {
-        const sortedData = data.sort((a, b) => a.Country.localeCompare(b.Country));
-        setCountries(sortedData);
-        await setCachedCountries(sortedData);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load countries list",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Fetch Error",
-        description: error instanceof Error ? error.message : "Failed to fetch countries",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingCountries(false);
+  const addCountry = (iso3: string) => {
+    if (!selectedCountries.includes(iso3)) {
+      setSelectedCountries([...selectedCountries, iso3]);
     }
   };
 
-  const addCountry = (country: string) => {
-    if (!selectedCountries.includes(country)) {
-      setSelectedCountries([...selectedCountries, country]);
+  const removeCountry = (iso3: string) => {
+    setSelectedCountries(selectedCountries.filter(c => c !== iso3));
+    const country = countries.find(c => c.iso3 === iso3);
+    if (country) {
+      setInflationData(inflationData.filter(d => d.country !== country.name));
     }
   };
 
-  const removeCountry = (country: string) => {
-    setSelectedCountries(selectedCountries.filter(c => c !== country));
-    setInflationData(inflationData.filter(d => d.country !== country));
+  const getCountryName = (iso3: string): string => {
+    return countries.find(c => c.iso3 === iso3)?.name || iso3;
   };
 
   const fetchInflationData = async () => {
@@ -197,71 +167,55 @@ export default function InflationViewer() {
 
     setIsLoadingData(true);
     const newInflationData: InflationData[] = [];
-    const countriesWithoutData: string[] = [];
-    let cachedCount = 0;
-    let fetchedCount = 0;
+    const countriesWithErrors: string[] = [];
 
     try {
-      for (const country of selectedCountries) {
-        const startDate = `${startYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
-        const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
-        
-        const cachedData = await getCachedInflationData(country, startDate, endDate);
-        
-        if (cachedData && Array.isArray(cachedData)) {
-          newInflationData.push({
-            country,
-            data: cachedData,
-          });
-          cachedCount++;
-        } else {
-          const response = await fetch(
-            `/api/inflation/data/${encodeURIComponent(country)}?from=${startDate}&to=${endDate}`
-          );
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
 
-          if (!response.ok) {
-            countriesWithoutData.push(country);
-            continue;
-          }
-
-          const data: InflationDataPoint[] = await response.json();
-
-          if (Array.isArray(data) && data.length > 0) {
-            const sortedData = data.sort((a, b) => 
-              new Date(a.DateTime).getTime() - new Date(b.DateTime).getTime()
-            );
-            await setCachedInflationData(country, startDate, endDate, sortedData);
-            
+      for (const iso3 of selectedCountries) {
+        try {
+          const countryData = await loadCountryInflationData(iso3, startDate, endDate);
+          
+          const legacyData: LegacyInflationDataPoint[] = countryData.data.map(point => ({
+            Country: countryData.country,
+            Category: 'Inflation',
+            DateTime: point.dateString,
+            Value: point.value
+          }));
+          
+          if (legacyData.length > 0) {
             newInflationData.push({
-              country,
-              data: sortedData,
+              country: countryData.country,
+              data: legacyData
             });
-            fetchedCount++;
           } else {
-            countriesWithoutData.push(country);
+            countriesWithErrors.push(getCountryName(iso3));
           }
+        } catch (error) {
+          console.error(`Error loading data for ${iso3}:`, error);
+          countriesWithErrors.push(getCountryName(iso3));
         }
       }
 
       setInflationData(newInflationData);
       
       if (newInflationData.length > 0) {
-        const cacheMsg = cachedCount > 0 ? ` (${cachedCount} from cache)` : '';
         toast({
           title: "Data Loaded",
-          description: `Successfully loaded data for ${newInflationData.length} ${newInflationData.length > 1 ? 'countries' : 'country'}${cacheMsg}`,
+          description: `Successfully loaded data for ${newInflationData.length} ${newInflationData.length > 1 ? 'countries' : 'country'}`,
         });
       }
 
-      if (countriesWithoutData.length > 0) {
+      if (countriesWithErrors.length > 0) {
         toast({
-          title: `No Data Available`,
-          description: `No inflation data found for: ${countriesWithoutData.join(', ')}. Try selecting different countries or date ranges.`,
+          title: `Load Error`,
+          description: `Could not load data for: ${countriesWithErrors.join(', ')}`,
           variant: "destructive",
         });
       }
 
-      if (newInflationData.length === 0 && countriesWithoutData.length === 0) {
+      if (newInflationData.length === 0) {
         toast({
           title: "No Data",
           description: "No inflation data was loaded. Please try different selections.",
@@ -293,7 +247,7 @@ export default function InflationViewer() {
               Inflation Historical Data Viewer
             </CardTitle>
             <CardDescription>
-              View historical inflation rates by country using Trading Economics API
+              View historical inflation rates by country using curated World Bank format data
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -409,22 +363,21 @@ export default function InflationViewer() {
               <Label>Select Countries</Label>
               <Select
                 onValueChange={addCountry}
-                disabled={isLoadingCountries}
                 data-testid="select-country"
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={isLoadingCountries ? "Loading countries..." : "Select a country..."} />
+                  <SelectValue placeholder="Select a country..." />
                 </SelectTrigger>
                 <SelectContent>
                   {countries
-                    .filter(c => !selectedCountries.includes(c.Country))
+                    .filter(c => !selectedCountries.includes(c.iso3))
                     .map((country) => (
                       <SelectItem 
-                        key={country.Country} 
-                        value={country.Country}
-                        data-testid={`item-country-${country.Country}`}
+                        key={country.iso3} 
+                        value={country.iso3}
+                        data-testid={`item-country-${country.name}`}
                       >
-                        {country.Country}
+                        {country.name}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -432,17 +385,17 @@ export default function InflationViewer() {
 
               {selectedCountries.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {selectedCountries.map((country) => (
+                  {selectedCountries.map((iso3) => (
                     <div
-                      key={country}
+                      key={iso3}
                       className="flex items-center gap-2 px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm"
-                      data-testid={`badge-selected-${country}`}
+                      data-testid={`badge-selected-${getCountryName(iso3)}`}
                     >
-                      {country}
+                      {getCountryName(iso3)}
                       <button
-                        onClick={() => removeCountry(country)}
+                        onClick={() => removeCountry(iso3)}
                         className="hover:text-destructive"
-                        data-testid={`button-remove-${country}`}
+                        data-testid={`button-remove-${getCountryName(iso3)}`}
                       >
                         ×
                       </button>
