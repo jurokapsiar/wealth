@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ChartSettings } from "./ChartSettings";
 import {
   LineChart,
   Line,
@@ -26,6 +27,11 @@ interface ChartViewProps {
   useYear0Prices: boolean;
   visibleInvestments: Set<string>;
   visibleCosts: Set<string>;
+  onShowWealthChange: (value: boolean) => void;
+  onShowWealthYear0Change: (value: boolean) => void;
+  onUseYear0PricesChange: (value: boolean) => void;
+  onToggleInvestment: (id: string) => void;
+  onToggleCost: (id: string) => void;
 }
 
 const COLORS = {
@@ -52,6 +58,11 @@ export function ChartView({
   useYear0Prices,
   visibleInvestments,
   visibleCosts,
+  onShowWealthChange,
+  onShowWealthYear0Change,
+  onUseYear0PricesChange,
+  onToggleInvestment,
+  onToggleCost,
 }: ChartViewProps) {
   const chartData = useMemo(() => {
     return projections.map((proj) => {
@@ -145,8 +156,26 @@ export function ChartView({
   const chartWidth = Math.max(800, projections.length * 40);
 
   return (
-    <Card>
-      <CardContent className="p-3">
+    <Card className="relative">
+      {/* Chart Settings Overlay */}
+      <div className="absolute top-3 left-3 z-10">
+        <ChartSettings
+          showWealth={showWealth}
+          showWealthYear0={showWealthYear0}
+          useYear0Prices={useYear0Prices}
+          visibleInvestments={visibleInvestments}
+          visibleCosts={visibleCosts}
+          investments={investments}
+          costs={costs}
+          onShowWealthChange={onShowWealthChange}
+          onShowWealthYear0Change={onShowWealthYear0Change}
+          onUseYear0PricesChange={onUseYear0PricesChange}
+          onToggleInvestment={onToggleInvestment}
+          onToggleCost={onToggleCost}
+        />
+      </div>
+
+      <CardContent className="p-3 pt-12">
         <ScrollArea className="w-full">
           <div style={{ width: chartWidth, minWidth: "100%" }}>
             <ResponsiveContainer width="100%" height={400}>

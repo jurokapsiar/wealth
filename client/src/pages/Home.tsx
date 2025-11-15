@@ -4,17 +4,15 @@ import { CostEntry, type Cost } from "@/components/CostEntry";
 import { InvestmentEntry, type Investment } from "@/components/InvestmentEntry";
 import { ProjectionTable, type YearProjection } from "@/components/ProjectionTable";
 import { ChartView } from "@/components/ChartView";
-import { ProjectionToolbar } from "@/components/ProjectionToolbar";
-import { ChartSettings } from "@/components/ChartSettings";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, PlusCircle, Save, FolderOpen, ChevronDown, Trash2 } from "lucide-react";
+import { Calculator, PlusCircle, Save, FolderOpen, ChevronDown, Trash2, Plus, Navigation2, TrendingUp, DollarSign, BarChart3 } from "lucide-react";
 
 const STORAGE_KEY = 'wealth-projection-data';
 const SCENARIOS_KEY = 'wealth-projection-scenarios';
@@ -71,6 +69,7 @@ export default function Home() {
   const settingsRef = useRef<HTMLDivElement>(null);
   const investmentsRef = useRef<HTMLDivElement>(null);
   const costsRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
   const investmentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const costRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const leftPanelRef = useRef<HTMLDivElement>(null);
@@ -145,10 +144,10 @@ export default function Home() {
     }
   };
 
-  const navigateToSection = (section: 'settings' | 'investments' | 'costs') => {
-    if (section === 'settings') scrollToElement(settingsRef.current);
-    else if (section === 'investments') scrollToElement(investmentsRef.current);
-    else if (section === 'costs') scrollToElement(costsRef.current);
+  const scrollToChart = () => {
+    if (chartRef.current) {
+      chartRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const addCost = () => {
@@ -427,20 +426,102 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-14 z-40 bg-background border-b shadow-sm">
+      <header className="sticky top-0 z-40 bg-background border-b shadow-sm">
         <div className="container mx-auto px-3 py-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Calculator className="h-5 w-5 text-primary" />
-              <div>
-                <h1 className="text-lg font-bold">Wealth Projection Calculator</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">
-                  {currentScenarioName ? `Scenario: ${currentScenarioName}` : 'Unsaved scenario'}
-                </p>
-              </div>
+              <h1 className="text-lg font-bold">Wealth</h1>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Add Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    data-testid="button-add-menu"
+                    className="h-8 w-8"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={addInvestment} data-testid="menu-add-investment">
+                    <TrendingUp className="h-3.5 w-3.5 mr-2" />
+                    Add Investment
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={addCost} data-testid="menu-add-cost">
+                    <DollarSign className="h-3.5 w-3.5 mr-2" />
+                    Add Cost
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Navigation Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    data-testid="button-navigate-menu"
+                    className="h-8 w-8"
+                  >
+                    <Navigation2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => scrollToElement(settingsRef.current)} data-testid="menu-nav-settings">
+                    Initial Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  
+                  {investments.length > 0 && (
+                    <>
+                      <DropdownMenuLabel className="text-xs font-semibold text-green-600 dark:text-green-400">
+                        Investments
+                      </DropdownMenuLabel>
+                      {investments.map((investment) => (
+                        <DropdownMenuItem
+                          key={investment.id}
+                          onClick={() => scrollToElement(investmentRefs.current[investment.id])}
+                          data-testid={`menu-nav-investment-${investment.id}`}
+                          className="pl-6"
+                        >
+                          {investment.name || 'Unnamed Investment'}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  
+                  {costs.length > 0 && (
+                    <>
+                      <DropdownMenuLabel className="text-xs font-semibold text-red-600 dark:text-red-400">
+                        Costs
+                      </DropdownMenuLabel>
+                      {costs.map((cost) => (
+                        <DropdownMenuItem
+                          key={cost.id}
+                          onClick={() => scrollToElement(costRefs.current[cost.id])}
+                          data-testid={`menu-nav-cost-${cost.id}`}
+                          className="pl-6"
+                        >
+                          {cost.name || 'Unnamed Cost'}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  
+                  <DropdownMenuItem onClick={scrollToChart} data-testid="menu-nav-chart">
+                    <BarChart3 className="h-3.5 w-3.5 mr-2" />
+                    Chart
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -461,7 +542,7 @@ export default function Home() {
                     className="gap-1.5 h-8"
                   >
                     <FolderOpen className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Scenarios</span>
+                    <span className="hidden sm:inline">Open</span>
                     <ChevronDown className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -481,19 +562,9 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="sticky top-[calc(3.5rem+56px)] z-30 bg-background/95 backdrop-blur border-b">
-        <div className="container mx-auto px-3 py-2">
-          <ProjectionToolbar
-            onAddInvestment={addInvestment}
-            onAddCost={addCost}
-            onNavigateToSection={navigateToSection}
-          />
-        </div>
-      </div>
-
       <div className="container mx-auto px-3 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <ScrollArea className="h-[calc(100vh-220px)]" ref={leftPanelRef}>
+          <ScrollArea className="h-[calc(100vh-120px)]" ref={leftPanelRef}>
             <div className="space-y-3 pr-3">
               <div ref={settingsRef}>
                 <SettingsCard
@@ -515,7 +586,7 @@ export default function Home() {
                 {investments.length === 0 ? (
                   <div className="text-center py-6 px-3 border border-dashed rounded text-sm">
                     <p className="text-muted-foreground">
-                      No investments yet. Use toolbar to add.
+                      No investments yet. Use + menu to add.
                     </p>
                   </div>
                 ) : (
@@ -540,7 +611,7 @@ export default function Home() {
                 {costs.length === 0 ? (
                   <div className="text-center py-6 px-3 border border-dashed rounded text-sm">
                     <p className="text-muted-foreground">
-                      No costs yet. Use toolbar to add.
+                      No costs yet. Use + menu to add.
                     </p>
                   </div>
                 ) : (
@@ -562,24 +633,7 @@ export default function Home() {
             </div>
           </ScrollArea>
 
-          <div className="space-y-2">
-            <div className="flex justify-end">
-              <ChartSettings
-                showWealth={showWealth}
-                showWealthYear0={showWealthYear0}
-                useYear0Prices={useYear0Prices}
-                visibleInvestments={visibleInvestments}
-                visibleCosts={visibleCosts}
-                investments={investments}
-                costs={costs}
-                onShowWealthChange={setShowWealth}
-                onShowWealthYear0Change={setShowWealthYear0}
-                onUseYear0PricesChange={setUseYear0Prices}
-                onToggleInvestment={toggleInvestment}
-                onToggleCost={toggleCost}
-              />
-            </div>
-            
+          <div ref={chartRef}>
             <ChartView
               projections={projections}
               costs={costs}
@@ -591,6 +645,11 @@ export default function Home() {
               useYear0Prices={useYear0Prices}
               visibleInvestments={visibleInvestments}
               visibleCosts={visibleCosts}
+              onShowWealthChange={setShowWealth}
+              onShowWealthYear0Change={setShowWealthYear0}
+              onUseYear0PricesChange={setUseYear0Prices}
+              onToggleInvestment={toggleInvestment}
+              onToggleCost={toggleCost}
             />
           </div>
         </div>
