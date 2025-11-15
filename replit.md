@@ -11,9 +11,16 @@ The application is a single-page application built with **React and TypeScript**
 
 **Key Features and Design Decisions:**
 *   **Wealth Projection Calculator**:
+    *   **Compact Desktop UI**: Minimalist header with "Wealth" title and icon-based controls. Icon buttons for Add (+), Navigate, Save, and Open reduce header clutter. Two-panel layout on desktop (≥lg): scrollable inputs panel (left) and fixed chart panel (right), stacking vertically on mobile.
+    *   **Icon-Based Navigation**: Plus (+) button opens dropdown with "Add Investment" and "Add Cost" options. Navigation button opens menu with links to Initial Settings, all individual Investments, all individual Costs, and Chart.
+    *   **Chart Settings Overlay**: Chart configuration button positioned as an overlay in the top-left corner of the chart card, controlling wealth visibility, Year 0 prices toggle, and individual investment/cost visibility.
     *   **Real-time Calculations**: All financial projections (initial wealth, interest, inflation, investment income, fixed/percentage-based costs) update instantly upon input changes.
     *   **Detailed Breakdown**: Year-over-year projections include expandable rows showing inflation-adjusted "Year 0 Value" for investments and costs.
     *   **Interactive Chart View**: Visualizes wealth, investments, and costs over time with toggleable lines, age display, and "Net Wealth (Year 0 Prices)" for inflation-adjusted purchasing power. Wealth lines are scaled for better comparison.
+    *   **Auto-Scroll & Auto-Enable**: When adding new investments/costs, the left panel auto-scrolls to the new entry, focuses the first input, and automatically enables the item in chart visibility.
+    *   **Age Calculations**: Investment and cost entries display contextual age information (e.g., "Age 42", "10 years (ages 42–51)") based on start year and duration.
+    *   **Horizontal Compact Layout**: Settings, investment, and cost entry cards use horizontal layout with labels next to inputs (grid-cols-[100px_1fr]) and reduced padding (h-8 inputs).
+    *   **Visual Refinements**: Border radius reduced globally to 0.25rem for a more compact look. Number input spin buttons hidden via CSS for cleaner appearance.
     *   **Scenario Management**: Allows users to save, load, and delete multiple financial scenarios, with automatic persistence to localStorage.
     *   **Cost Management**: Costs can be enabled/disabled without deletion and are categorized as fixed amounts (inflation-adjusted) or percentages of wealth.
 *   **ETF Historical Data Viewer**:
