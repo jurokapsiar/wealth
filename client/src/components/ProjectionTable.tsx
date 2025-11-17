@@ -89,7 +89,7 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
               </tr>
             </thead>
             <tbody>
-              {projections.map((projection) => {
+              {projections.filter(projection => projection.endingWealth >= 0).map((projection) => {
                 const isExpanded = expandedYears.has(projection.yearNumber);
                 const hasDetails = projection.costs.length > 0 || projection.investments.length > 0;
 

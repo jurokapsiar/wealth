@@ -74,15 +74,23 @@ export function ChartView({
       };
 
       if (showWealth) {
-        dataPoint.wealth = Math.round(proj.endingWealth / 10);
-        dataPoint.wealthActual = Math.round(proj.endingWealth);
+        const wealthValue = Math.round(proj.endingWealth);
+        // Only show non-negative values in the chart
+        if (wealthValue >= 0) {
+          dataPoint.wealth = Math.round(proj.endingWealth / 10);
+          dataPoint.wealthActual = wealthValue;
+        }
       }
 
       if (showWealthYear0) {
         const inflationMultiplier = Math.pow(1 + inflation / 100, proj.yearNumber);
         const wealthYear0 = proj.endingWealth / inflationMultiplier;
-        dataPoint.wealthYear0 = Math.round(wealthYear0 / 10);
-        dataPoint.wealthYear0Actual = Math.round(wealthYear0);
+        const wealthYear0Value = Math.round(wealthYear0);
+        // Only show non-negative values in the chart
+        if (wealthYear0Value >= 0) {
+          dataPoint.wealthYear0 = Math.round(wealthYear0 / 10);
+          dataPoint.wealthYear0Actual = wealthYear0Value;
+        }
       }
 
       proj.investments.forEach((inv) => {

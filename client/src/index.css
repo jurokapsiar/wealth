@@ -79,7 +79,7 @@
   --font-sans: Inter, system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: .25rem; /* 4px - compact design */
+  --radius: .125rem; /* 2px - more compact design */
   --shadow-2xs: 0px 1px 2px 0px hsl(220 9% 15% / 0.05);
   --shadow-xs: 0px 1px 2px 0px hsl(220 9% 15% / 0.08);
   --shadow-sm: 0px 2px 4px 0px hsl(220 9% 15% / 0.06), 0px 1px 2px -1px hsl(220 9% 15% / 0.04);
