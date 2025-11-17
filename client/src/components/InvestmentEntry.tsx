@@ -90,10 +90,17 @@ export const InvestmentEntry = forwardRef<HTMLDivElement, InvestmentEntryProps>(
                 data-testid={`input-investment-start-${investment.id}`}
                 type="number"
                 min="0"
+                max="99"
                 value={investment.startYear}
                 onChange={(e) =>
                   onUpdate({ ...investment, startYear: parseInt(e.target.value) || 0 })
                 }
+                onBlur={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  if (value > 99) {
+                    onUpdate({ ...investment, startYear: 99 });
+                  }
+                }}
                 className="h-8"
               />
               <p className="text-xs text-muted-foreground mt-0.5">Age {startAge}</p>
@@ -108,10 +115,19 @@ export const InvestmentEntry = forwardRef<HTMLDivElement, InvestmentEntryProps>(
                 data-testid={`input-investment-years-${investment.id}`}
                 type="number"
                 min="1"
+                max="99"
                 value={investment.years}
                 onChange={(e) =>
                   onUpdate({ ...investment, years: parseInt(e.target.value) || 1 })
                 }
+                onBlur={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  if (value > 99) {
+                    onUpdate({ ...investment, years: 99 });
+                  } else if (value < 1) {
+                    onUpdate({ ...investment, years: 1 });
+                  }
+                }}
                 className="h-8"
               />
               <p className="text-xs text-muted-foreground mt-0.5">
