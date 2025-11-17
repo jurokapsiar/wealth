@@ -12,15 +12,17 @@ A client-side web application for calculating wealth projection over time with i
 
 This application is deployed to GitHub Pages automatically when changes are pushed to the `main` branch.
 
-For detailed deployment verification and troubleshooting, see [DEPLOYMENT_VERIFICATION.md](./DEPLOYMENT_VERIFICATION.md).
+### 📋 Setup GitHub Pages
 
-### GitHub Pages Setup
+**New to GitHub Pages?** Follow the [GitHub Pages Setup Guide](./GITHUB_PAGES_SETUP.md) for detailed step-by-step instructions with screenshots.
 
-1. Go to your repository settings on GitHub
-2. Navigate to "Pages" in the left sidebar
-3. Under "Build and deployment", set:
-   - **Source**: GitHub Actions
-4. The site will be automatically deployed on every push to the main branch
+**Quick setup:**
+1. Go to repository **Settings** → **Pages**
+2. Set **Source** to **GitHub Actions**
+3. Merge to `main` branch to trigger deployment
+4. Site will be live at `https://jurokapsiar.github.io/wealth/`
+
+For deployment verification and troubleshooting, see [DEPLOYMENT_VERIFICATION.md](./DEPLOYMENT_VERIFICATION.md).
 
 ### Deployment Verification
 

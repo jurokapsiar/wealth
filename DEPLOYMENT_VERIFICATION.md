@@ -103,6 +103,8 @@ For the workflow to work correctly, the following GitHub repository settings mus
 2. **Source**: Select "GitHub Actions" (not "Deploy from a branch")
 3. **No branch selection needed** - The workflow handles deployment
 
+**Need help setting this up?** See the detailed [GitHub Pages Setup Guide](./GITHUB_PAGES_SETUP.md) with step-by-step instructions and troubleshooting.
+
 ### Workflow Triggers
 
 The deployment workflow will automatically run when:

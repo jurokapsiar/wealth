@@ -49,6 +49,8 @@ In GitHub repository settings:
 2. Set **Source** to: **GitHub Actions** (not "Deploy from a branch")
 3. Save
 
+**Need detailed instructions?** See the complete [GitHub Pages Setup Guide](./GITHUB_PAGES_SETUP.md) with step-by-step instructions.
+
 That's it! The workflow will handle the rest.
 
 ## Verification Checklist
