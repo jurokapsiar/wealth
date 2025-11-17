@@ -1,0 +1,111 @@
+name: Verify Deployment Configuration
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'vite.config.ts'
+      - 'package.json'
+  workflow_dispatch:
+
+jobs:
+  verify-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Verify build output
+        run: |
+          echo "Checking build output structure..."
+          
+          # Verify dist directory exists
+          if [ ! -d "dist" ]; then
+            echo "❌ Error: dist directory not found"
+            exit 1
+          fi
+          echo "✓ dist directory exists"
+          
+          # Verify index.html exists
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Error: dist/index.html not found"
+            exit 1
+          fi
+          echo "✓ index.html exists"
+          
+          # Verify .nojekyll file exists (required for GitHub Pages)
+          if [ ! -f "dist/.nojekyll" ]; then
+            echo "❌ Error: dist/.nojekyll not found (required for GitHub Pages)"
+            exit 1
+          fi
+          echo "✓ .nojekyll file exists"
+          
+          # Verify base path is set to /wealth/ in production build
+          if ! grep -q '"/wealth/' dist/index.html; then
+            echo "❌ Error: Base path /wealth/ not found in index.html"
+            echo "Content of index.html:"
+            cat dist/index.html
+            exit 1
+          fi
+          echo "✓ Base path /wealth/ is correctly set"
+          
+          # Verify assets directory exists
+          if [ ! -d "dist/assets" ]; then
+            echo "❌ Error: dist/assets directory not found"
+            exit 1
+          fi
+          echo "✓ assets directory exists"
+          
+          # List all files in dist for verification
+          echo ""
+          echo "Build output structure:"
+          find dist -type f | sort
+          
+          echo ""
+          echo "✅ All verification checks passed!"
+
+      - name: Validate workflow syntax
+        run: |
+          echo "Checking deploy.yml syntax..."
+          
+          # Install yaml parser if not available
+          if ! command -v yq &> /dev/null; then
+            sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            sudo chmod +x /usr/local/bin/yq
+          fi
+          
+          # Validate YAML syntax
+          if ! yq eval '.github/workflows/deploy.yml' > /dev/null 2>&1; then
+            echo "❌ Error: deploy.yml has syntax errors"
+            exit 1
+          fi
+          echo "✓ deploy.yml syntax is valid"
+          
+          # Check required jobs exist
+          if ! yq eval '.jobs.build' .github/workflows/deploy.yml > /dev/null 2>&1; then
+            echo "❌ Error: build job not found in deploy.yml"
+            exit 1
+          fi
+          echo "✓ build job exists"
+          
+          if ! yq eval '.jobs.deploy' .github/workflows/deploy.yml > /dev/null 2>&1; then
+            echo "❌ Error: deploy job not found in deploy.yml"
+            exit 1
+          fi
+          echo "✓ deploy job exists"
+          
+          echo "✅ Workflow validation passed!"

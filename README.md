@@ -12,6 +12,8 @@ A client-side web application for calculating wealth projection over time with i
 
 This application is deployed to GitHub Pages automatically when changes are pushed to the `main` branch.
 
+For detailed deployment verification and troubleshooting, see [DEPLOYMENT_VERIFICATION.md](./DEPLOYMENT_VERIFICATION.md).
+
 ### GitHub Pages Setup
 
 1. Go to your repository settings on GitHub
@@ -19,6 +21,16 @@ This application is deployed to GitHub Pages automatically when changes are push
 3. Under "Build and deployment", set:
    - **Source**: GitHub Actions
 4. The site will be automatically deployed on every push to the main branch
+
+### Deployment Verification
+
+The deployment workflow (`.github/workflows/deploy.yml`) is verified to:
+- ✅ Build the application with correct production settings
+- ✅ Use the correct base path (`/wealth/`)
+- ✅ Generate all required files including `.nojekyll`
+- ✅ Deploy to GitHub Pages using GitHub Actions
+
+A verification workflow (`.github/workflows/verify-deployment.yml`) automatically checks the build configuration on pull requests.
 
 ### Local Development
 
