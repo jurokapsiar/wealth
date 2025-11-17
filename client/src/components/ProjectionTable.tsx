@@ -12,6 +12,7 @@ export interface YearProjection {
   totalInvestments: number;
   costs: Array<{ name: string; amount: number; todaysValue: number }>;
   totalCosts: number;
+  tax: number;
   endingWealth: number;
 }
 
@@ -78,6 +79,9 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide hidden sm:table-cell">
                   Costs
                 </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide hidden lg:table-cell">
+                  Tax
+                </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
                   Ending
                 </th>
@@ -115,6 +119,9 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                       <td className="px-4 py-3 text-right tabular-nums text-sm text-destructive hidden sm:table-cell">
                         -{formatCurrency(projection.totalCosts)}
                       </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-sm text-destructive hidden lg:table-cell">
+                        {projection.tax > 0 ? `-${formatCurrency(projection.tax)}` : '—'}
+                      </td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold">
                         <span data-testid={`text-ending-wealth-${projection.yearNumber}`}>
                           {formatCurrency(projection.endingWealth)}
@@ -139,7 +146,7 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                     </tr>
                     {isExpanded && hasDetails && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-3 bg-muted/30">
+                        <td colSpan={7} className="px-4 py-3 bg-muted/30">
                           <div className="space-y-4">
                             {projection.investments.length > 0 && (
                               <div className="space-y-2">
@@ -203,6 +210,19 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                                   <span className="text-sm">Total Deducted</span>
                                   <span className="text-sm tabular-nums text-destructive">
                                     -{formatCurrency(projection.totalCosts)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            {projection.tax > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Tax on Interest Growth
+                                </p>
+                                <div className="flex justify-between items-center pl-4 py-1 font-semibold">
+                                  <span className="text-sm">Tax Deducted</span>
+                                  <span className="text-sm tabular-nums text-destructive">
+                                    -{formatCurrency(projection.tax)}
                                   </span>
                                 </div>
                               </div>

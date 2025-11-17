@@ -15,6 +15,8 @@ export interface Cost {
   startYear: number;
   years: number;
   enabled: boolean;
+  taxEnabled: boolean;
+  taxPercentage: number;
 }
 
 interface CostEntryProps {
@@ -171,6 +173,45 @@ export const CostEntry = forwardRef<HTMLDivElement, CostEntryProps>(
                 {cost.years} {cost.years === 1 ? 'year' : 'years'} (ages {startAge}–{endAge})
               </p>
             </div>
+          </div>
+
+          <div className="col-span-2 border-t pt-2 mt-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox
+                id={`cost-tax-enabled-${cost.id}`}
+                checked={cost.taxEnabled}
+                onCheckedChange={(checked) => onUpdate({ ...cost, taxEnabled: checked as boolean })}
+                data-testid={`checkbox-cost-tax-enabled-${cost.id}`}
+                disabled={!cost.enabled}
+              />
+              <Label htmlFor={`cost-tax-enabled-${cost.id}`} className="text-sm font-normal cursor-pointer">
+                Tax on yearly interest growth
+              </Label>
+            </div>
+            {cost.taxEnabled && (
+              <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-2 ml-6">
+                <Label htmlFor={`cost-tax-percentage-${cost.id}`} className="text-sm">
+                  Tax Rate
+                </Label>
+                <div className="relative">
+                  <Input
+                    id={`cost-tax-percentage-${cost.id}`}
+                    data-testid={`input-cost-tax-percentage-${cost.id}`}
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={cost.taxPercentage}
+                    onChange={(e) => onUpdate({ ...cost, taxPercentage: Number(e.target.value) })}
+                    className="pr-6 tabular-nums h-8"
+                    disabled={!cost.enabled}
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                    %
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -111,6 +111,8 @@ export default function Home() {
     const migratedCosts = (data.costs ?? []).map(cost => ({
       ...cost,
       enabled: cost.enabled ?? true,
+      taxEnabled: cost.taxEnabled ?? false,
+      taxPercentage: cost.taxPercentage ?? 0,
     }));
     setCosts(migratedCosts);
     setInvestments(data.investments ?? []);
@@ -159,6 +161,8 @@ export default function Home() {
       startYear: 0,
       years: 1,
       enabled: true,
+      taxEnabled: false,
+      taxPercentage: 0,
     };
     setCosts([...costs, newCost]);
     
@@ -398,7 +402,39 @@ export default function Home() {
         }
       });
 
-      const endingWealth = wealthAfterInterest + totalInvestments - totalCosts;
+      // Calculate tax on realized gains from cost withdrawals
+      let tax = 0;
+      if (year > 0) { // Year 0 has no tax
+        // Calculate tax for each cost with tax enabled
+        costs.forEach((cost) => {
+          if (cost.enabled && cost.taxEnabled && 
+              year >= cost.startYear && year < cost.startYear + cost.years) {
+            const inflationMultiplier = Math.pow(1 + inflation / 100, year);
+            let costYear0Value = 0;
+            
+            // Get the Year 0 value of the cost
+            if (cost.type === 'fixed') {
+              costYear0Value = cost.amount; // Fixed cost is in Year 0 dollars
+            } else {
+              // For percentage costs, calculate based on wealth after interest
+              const costAmount = (wealthAfterInterest * cost.amount) / 100;
+              costYear0Value = costAmount / inflationMultiplier;
+            }
+            
+            // Calculate how much this Year 0 value has grown with interest
+            const interestGrowthMultiplier = Math.pow(1 + yearlyInterest / 100, year);
+            const grownValue = costYear0Value * interestGrowthMultiplier;
+            
+            // Realized gain is the difference between grown value and original value
+            const realizedGain = grownValue - costYear0Value;
+            
+            // Tax is applied to the realized gain
+            tax += (realizedGain * cost.taxPercentage) / 100;
+          }
+        });
+      }
+
+      const endingWealth = wealthAfterInterest + totalInvestments - totalCosts - tax;
 
       yearlyProjections.push({
         yearNumber: year,
@@ -409,6 +445,7 @@ export default function Home() {
         totalInvestments,
         costs: yearCosts,
         totalCosts,
+        tax,
         endingWealth,
       });
 
