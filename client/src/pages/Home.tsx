@@ -111,6 +111,8 @@ export default function Home() {
     const migratedCosts = (data.costs ?? []).map(cost => ({
       ...cost,
       enabled: cost.enabled ?? true,
+      taxEnabled: cost.taxEnabled ?? false,
+      taxPercentage: cost.taxPercentage ?? 0,
     }));
     setCosts(migratedCosts);
     setInvestments(data.investments ?? []);
@@ -159,6 +161,8 @@ export default function Home() {
       startYear: 0,
       years: 1,
       enabled: true,
+      taxEnabled: false,
+      taxPercentage: 0,
     };
     setCosts([...costs, newCost]);
     
@@ -346,6 +350,7 @@ export default function Home() {
 
     const yearlyProjections: YearProjection[] = [];
     let currentWealth = initialWealth;
+    const year0Wealth = initialWealth; // Store Year 0 wealth as baseline for tax calculation
 
     for (let year = 0; year < projectionYears; year++) {
       const startingWealth = currentWealth;
@@ -398,7 +403,24 @@ export default function Home() {
         }
       });
 
-      const endingWealth = wealthAfterInterest + totalInvestments - totalCosts;
+      // Calculate tax on interest growth from Year 0
+      let tax = 0;
+      if (year > 0) { // Year 0 has no tax
+        // Calculate the growth from Year 0 to current year (before this year's interest)
+        const growthFromYear0 = startingWealth - year0Wealth;
+        
+        if (growthFromYear0 > 0) {
+          // Apply tax from costs that have tax enabled and are active in this year
+          costs.forEach((cost) => {
+            if (cost.enabled && cost.taxEnabled && 
+                year >= cost.startYear && year < cost.startYear + cost.years) {
+              tax += (growthFromYear0 * cost.taxPercentage) / 100;
+            }
+          });
+        }
+      }
+
+      const endingWealth = wealthAfterInterest + totalInvestments - totalCosts - tax;
 
       yearlyProjections.push({
         yearNumber: year,
@@ -409,6 +431,7 @@ export default function Home() {
         totalInvestments,
         costs: yearCosts,
         totalCosts,
+        tax,
         endingWealth,
       });
 

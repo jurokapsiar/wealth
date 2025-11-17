@@ -14,6 +14,7 @@ export default function ProjectionTableExample() {
         { name: 'Travel', amount: 5000, todaysValue: 5000 },
       ],
       totalCosts: 55000,
+      tax: 0,
       endingWealth: 52500,
     },
     {
@@ -28,6 +29,7 @@ export default function ProjectionTableExample() {
         { name: 'Travel', amount: 5150, todaysValue: 5000 },
       ],
       totalCosts: 56650,
+      tax: 0,
       endingWealth: -212,
     },
     {
@@ -41,6 +43,7 @@ export default function ProjectionTableExample() {
         { name: 'Living Expenses', amount: 53045, todaysValue: 50000 },
       ],
       totalCosts: 53045,
+      tax: 0,
       endingWealth: -53257,
     },
   ];
