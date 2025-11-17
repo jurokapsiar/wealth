@@ -350,7 +350,6 @@ export default function Home() {
 
     const yearlyProjections: YearProjection[] = [];
     let currentWealth = initialWealth;
-    const year0Wealth = initialWealth; // Store Year 0 wealth as baseline for tax calculation
 
     for (let year = 0; year < projectionYears; year++) {
       const startingWealth = currentWealth;
@@ -403,21 +402,36 @@ export default function Home() {
         }
       });
 
-      // Calculate tax on interest growth from Year 0
+      // Calculate tax on realized gains from cost withdrawals
       let tax = 0;
       if (year > 0) { // Year 0 has no tax
-        // Calculate the growth from Year 0 to current year (before this year's interest)
-        const growthFromYear0 = startingWealth - year0Wealth;
-        
-        if (growthFromYear0 > 0) {
-          // Apply tax from costs that have tax enabled and are active in this year
-          costs.forEach((cost) => {
-            if (cost.enabled && cost.taxEnabled && 
-                year >= cost.startYear && year < cost.startYear + cost.years) {
-              tax += (growthFromYear0 * cost.taxPercentage) / 100;
+        // Calculate tax for each cost with tax enabled
+        costs.forEach((cost) => {
+          if (cost.enabled && cost.taxEnabled && 
+              year >= cost.startYear && year < cost.startYear + cost.years) {
+            const inflationMultiplier = Math.pow(1 + inflation / 100, year);
+            let costYear0Value = 0;
+            
+            // Get the Year 0 value of the cost
+            if (cost.type === 'fixed') {
+              costYear0Value = cost.amount; // Fixed cost is in Year 0 dollars
+            } else {
+              // For percentage costs, calculate based on wealth after interest
+              const costAmount = (wealthAfterInterest * cost.amount) / 100;
+              costYear0Value = costAmount / inflationMultiplier;
             }
-          });
-        }
+            
+            // Calculate how much this Year 0 value has grown with interest
+            const interestGrowthMultiplier = Math.pow(1 + yearlyInterest / 100, year);
+            const grownValue = costYear0Value * interestGrowthMultiplier;
+            
+            // Realized gain is the difference between grown value and original value
+            const realizedGain = grownValue - costYear0Value;
+            
+            // Tax is applied to the realized gain
+            tax += (realizedGain * cost.taxPercentage) / 100;
+          }
+        });
       }
 
       const endingWealth = wealthAfterInterest + totalInvestments - totalCosts - tax;
