@@ -112,10 +112,17 @@ export default function Home() {
       ...cost,
       enabled: cost.enabled ?? true,
       taxEnabled: cost.taxEnabled ?? false,
-      taxPercentage: cost.taxPercentage ?? 0,
+      taxPercentage: Math.min(cost.taxPercentage ?? 0, 50),
+      startYear: Math.min(cost.startYear ?? 0, 99),
+      years: Math.min(Math.max(cost.years ?? 1, 1), 99),
     }));
     setCosts(migratedCosts);
-    setInvestments(data.investments ?? []);
+    const validatedInvestments = (data.investments ?? []).map(investment => ({
+      ...investment,
+      startYear: Math.min(investment.startYear ?? 0, 99),
+      years: Math.min(Math.max(investment.years ?? 1, 1), 99),
+    }));
+    setInvestments(validatedInvestments);
     setMaxYears(data.maxYears ?? 30);
   };
 

@@ -147,8 +147,15 @@ export const CostEntry = forwardRef<HTMLDivElement, CostEntryProps>(
                 data-testid={`input-cost-start-${cost.id}`}
                 type="number"
                 min="0"
+                max="99"
                 value={cost.startYear}
                 onChange={(e) => onUpdate({ ...cost, startYear: Number(e.target.value) })}
+                onBlur={(e) => {
+                  const value = Number(e.target.value);
+                  if (value > 99) {
+                    onUpdate({ ...cost, startYear: 99 });
+                  }
+                }}
                 className="tabular-nums h-8"
                 disabled={!cost.enabled}
               />
@@ -164,8 +171,17 @@ export const CostEntry = forwardRef<HTMLDivElement, CostEntryProps>(
                 data-testid={`input-cost-years-${cost.id}`}
                 type="number"
                 min="1"
+                max="99"
                 value={cost.years}
                 onChange={(e) => onUpdate({ ...cost, years: Number(e.target.value) })}
+                onBlur={(e) => {
+                  const value = Number(e.target.value);
+                  if (value > 99) {
+                    onUpdate({ ...cost, years: 99 });
+                  } else if (value < 1) {
+                    onUpdate({ ...cost, years: 1 });
+                  }
+                }}
                 className="tabular-nums h-8"
                 disabled={!cost.enabled}
               />
@@ -199,10 +215,18 @@ export const CostEntry = forwardRef<HTMLDivElement, CostEntryProps>(
                     data-testid={`input-cost-tax-percentage-${cost.id}`}
                     type="number"
                     min="0"
-                    max="100"
+                    max="50"
                     step="0.1"
                     value={cost.taxPercentage}
                     onChange={(e) => onUpdate({ ...cost, taxPercentage: Number(e.target.value) })}
+                    onBlur={(e) => {
+                      const value = Number(e.target.value);
+                      if (value > 50) {
+                        onUpdate({ ...cost, taxPercentage: 50 });
+                      } else if (value < 0) {
+                        onUpdate({ ...cost, taxPercentage: 0 });
+                      }
+                    }}
                     className="pr-6 tabular-nums h-8"
                     disabled={!cost.enabled}
                   />
