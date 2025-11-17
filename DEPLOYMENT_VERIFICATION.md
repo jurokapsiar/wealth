@@ -166,6 +166,21 @@ The `verify-deployment.yml` workflow provides automated checks for:
 - Base path configuration
 - Required files presence
 
+### Quick Verification Script
+A bash script is provided to quickly verify the deployment configuration:
+```bash
+./verify-deployment.sh
+```
+
+This script checks:
+- Repository structure and required files
+- Vite configuration for correct base path
+- Workflow configuration
+- Build process
+- Build output integrity
+
+Run this script before merging to ensure everything is configured correctly.
+
 ## Troubleshooting
 
 ### Common Issues
