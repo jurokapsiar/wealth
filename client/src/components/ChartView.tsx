@@ -74,15 +74,23 @@ export function ChartView({
       };
 
       if (showWealth) {
-        dataPoint.wealth = Math.round(proj.endingWealth / 10);
-        dataPoint.wealthActual = Math.round(proj.endingWealth);
+        const wealthValue = Math.round(proj.endingWealth);
+        // Only show non-negative values in the chart
+        if (wealthValue >= 0) {
+          dataPoint.wealth = Math.round(proj.endingWealth / 10);
+          dataPoint.wealthActual = wealthValue;
+        }
       }
 
       if (showWealthYear0) {
         const inflationMultiplier = Math.pow(1 + inflation / 100, proj.yearNumber);
         const wealthYear0 = proj.endingWealth / inflationMultiplier;
-        dataPoint.wealthYear0 = Math.round(wealthYear0 / 10);
-        dataPoint.wealthYear0Actual = Math.round(wealthYear0);
+        const wealthYear0Value = Math.round(wealthYear0);
+        // Only show non-negative values in the chart
+        if (wealthYear0Value >= 0) {
+          dataPoint.wealthYear0 = Math.round(wealthYear0 / 10);
+          dataPoint.wealthYear0Actual = wealthYear0Value;
+        }
       }
 
       proj.investments.forEach((inv) => {
@@ -144,7 +152,7 @@ export function ChartView({
   if (projections.length === 0) {
     return (
       <Card>
-        <CardContent className="py-12">
+        <CardContent className="py-6">
           <p className="text-muted-foreground text-center text-sm">
             No projection data to display. Add some investments or costs to see the chart.
           </p>
@@ -158,7 +166,7 @@ export function ChartView({
   return (
     <Card className="relative">
       {/* Chart Settings Overlay */}
-      <div className="absolute top-3 left-3 z-10">
+      <div className="absolute top-1.5 left-1.5 z-10">
         <ChartSettings
           showWealth={showWealth}
           showWealthYear0={showWealthYear0}
@@ -175,11 +183,11 @@ export function ChartView({
         />
       </div>
 
-      <CardContent className="p-3 pt-12">
+      <CardContent className="p-1.5 pt-6">
         <ScrollArea className="w-full">
           <div style={{ width: chartWidth, minWidth: "100%" }}>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="year"
@@ -258,7 +266,7 @@ export function ChartView({
         </ScrollArea>
 
         {useYear0Prices && (
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-1">
             <strong>Year 0 Prices:</strong> Values shown in today's purchasing power
           </p>
         )}
