@@ -28,7 +28,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
   },
   server: {
@@ -37,4 +37,7 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
+  // Configure base path for GitHub Pages
+  // The base will be /wealth/ when deployed to GitHub Pages
+  base: process.env.NODE_ENV === 'production' ? '/wealth/' : '/',
 });
