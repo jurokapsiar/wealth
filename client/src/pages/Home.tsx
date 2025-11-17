@@ -606,10 +606,10 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="container mx-auto px-3 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div className="container mx-auto px-3 py-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
           <ScrollArea className="h-[calc(100vh-120px)]" ref={leftPanelRef}>
-            <div className="space-y-3 pr-3">
+            <div className="space-y-2 pr-2">
               <div ref={settingsRef}>
                 <SettingsCard
                   initialWealth={initialWealth}
@@ -626,15 +626,15 @@ export default function Home() {
               </div>
 
               <div ref={investmentsRef}>
-                <h2 className="text-sm font-semibold mb-2">Investment Income</h2>
+                <h2 className="text-sm font-semibold mb-1">Investment Income</h2>
                 {investments.length === 0 ? (
-                  <div className="text-center py-6 px-3 border border-dashed rounded text-sm">
+                  <div className="text-center py-3 px-2 border border-dashed rounded text-sm">
                     <p className="text-muted-foreground">
                       No investments yet. Use + menu to add.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {investments.map((investment) => (
                       <InvestmentEntry
                         key={investment.id}
@@ -651,15 +651,15 @@ export default function Home() {
               </div>
 
               <div ref={costsRef}>
-                <h2 className="text-sm font-semibold mb-2">Projected Costs</h2>
+                <h2 className="text-sm font-semibold mb-1">Projected Costs</h2>
                 {costs.length === 0 ? (
-                  <div className="text-center py-6 px-3 border border-dashed rounded text-sm">
+                  <div className="text-center py-3 px-2 border border-dashed rounded text-sm">
                     <p className="text-muted-foreground">
                       No costs yet. Use + menu to add.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {costs.map((cost) => (
                       <CostEntry
                         key={cost.id}
@@ -698,7 +698,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <ProjectionTable projections={projections} />
 
           {projections.length > 0 && (
@@ -727,8 +727,8 @@ export default function Home() {
               Enter a name for this scenario to save your current settings, costs, and investments.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="space-y-2 py-2">
+            <div className="space-y-1">
               <Label htmlFor="scenario-name">Scenario Name</Label>
               <Input
                 id="scenario-name"
@@ -775,17 +775,17 @@ export default function Home() {
               Load a previously saved scenario.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-2">
             {savedScenarios.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
+              <p className="text-center text-muted-foreground py-4">
                 No saved scenarios yet. Save your current scenario to get started.
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {savedScenarios.map((scenario) => (
                   <div
                     key={scenario.id}
-                    className="flex items-center justify-between p-2 border rounded hover-elevate"
+                    className="flex items-center justify-between p-1.5 border rounded hover-elevate"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate text-sm" data-testid={`text-scenario-${scenario.id}`}>

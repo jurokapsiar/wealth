@@ -67,25 +67,25 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
           <table className="w-full">
             <thead className="sticky top-0 bg-muted/50 border-b">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
+                <th className="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide">
                   Year
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide hidden sm:table-cell">
+                <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide hidden sm:table-cell">
                   Starting
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide hidden md:table-cell">
+                <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide hidden md:table-cell">
                   Interest
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide hidden sm:table-cell">
+                <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide hidden sm:table-cell">
                   Costs
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide hidden lg:table-cell">
+                <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide hidden lg:table-cell">
                   Tax
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
+                <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide">
                   Ending
                 </th>
-                <th className="px-4 py-3 w-10"></th>
+                <th className="px-2 py-1.5 w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -100,7 +100,7 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                       onClick={() => hasDetails && toggleYear(projection.yearNumber)}
                       data-testid={`row-year-${projection.yearNumber}`}
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-1.5">
                         <div className="flex flex-col">
                           <span className="font-medium tabular-nums">
                             Year {projection.yearNumber}
@@ -110,24 +110,24 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-sm hidden sm:table-cell">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-sm hidden sm:table-cell">
                         {formatCurrency(projection.startingWealth)}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-sm text-chart-2 hidden md:table-cell">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-sm text-chart-2 hidden md:table-cell">
                         +{formatCurrency(projection.interestGained)}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-sm text-destructive hidden sm:table-cell">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-sm text-destructive hidden sm:table-cell">
                         -{formatCurrency(projection.totalCosts)}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-sm text-destructive hidden lg:table-cell">
+                      <td className="px-2 py-1.5 text-right tabular-nums text-sm text-destructive hidden lg:table-cell">
                         {projection.tax > 0 ? `-${formatCurrency(projection.tax)}` : '—'}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold">
                         <span data-testid={`text-ending-wealth-${projection.yearNumber}`}>
                           {formatCurrency(projection.endingWealth)}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-1.5">
                         {hasDetails && (
                           <Button
                             variant="ghost"
@@ -146,7 +146,7 @@ export function ProjectionTable({ projections }: ProjectionTableProps) {
                     </tr>
                     {isExpanded && hasDetails && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-3 bg-muted/30">
+                        <td colSpan={7} className="px-2 py-1.5 bg-muted/30">
                           <div className="space-y-4">
                             {projection.investments.length > 0 && (
                               <div className="space-y-2">
